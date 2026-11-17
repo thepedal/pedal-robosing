@@ -15,7 +15,7 @@ namespace Buzz.MachineInterface
       public object DefValue { get; set; } public string[] ValueDescriptions { get; set; } public bool IsStateless { get; set; } }
     public struct Note { public const int Max = 16 * 9 + 12; public const int Off = 255; public byte Value; public Note(int v) { Value = (byte)v; } }
     public struct Sample { public float L, R; }
-    public class MasterInfo { public int SamplesPerSec = 44100; public int BeatsPerMin = 120; public int SamplesPerTick = 5512; }
+    public class MasterInfo { public int SamplesPerSec = 44100; public int BeatsPerMin = 120; public int SamplesPerTick = 5512; public int TicksPerBeat = 4; }
     public interface IBuzzMachine { }
     public interface IBuzzMachineHost { BuzzGUI.Interfaces.IMachine Machine { get; } MasterInfo MasterInfo { get; } }
 }
@@ -41,14 +41,29 @@ namespace System.Windows
     public enum WindowStartupLocation { Manual, CenterOwner }
     public static class MessageBox { public static void Show(string text, string caption) { } }
     public class Application { public static Application Current => null; public Window MainWindow => null; }
+    public struct Point { public double X, Y; }
+    public struct CornerRadius { public CornerRadius(double u) { } }
     public class FrameworkElement { public Thickness Margin { get; set; } public double MinWidth { get; set; } public double MinHeight { get; set; }
-        public HorizontalAlignment HorizontalAlignment { get; set; } public event RoutedEventHandler Loaded; public bool Focus() => true; }
-    public class Window : FrameworkElement { public string Title { get; set; } public double Width { get; set; } public double Height { get; set; }
+        public double Width { get; set; } public double Height { get; set; } public bool IsHitTestVisible { get; set; }
+        public HorizontalAlignment HorizontalAlignment { get; set; } public event RoutedEventHandler Loaded; public bool Focus() => true;
+        public event System.Windows.Input.MouseButtonEventHandler MouseLeftButtonDown, MouseLeftButtonUp;
+        public event System.Windows.Input.MouseEventHandler MouseMove;
+        public bool CaptureMouse() => true; public void ReleaseMouseCapture() { } }
+    public class Window : FrameworkElement { public string Title { get; set; }
         public WindowStartupLocation WindowStartupLocation { get; set; } public bool ShowInTaskbar { get; set; } public object Content { get; set; }
         public Window Owner { get; set; } public event EventHandler Closed; public void Show() { } public bool Activate() => true; public void Close() { } }
 }
+namespace System.Windows.Input
+{
+    public class MouseEventArgs : EventArgs { public System.Windows.Point GetPosition(System.Windows.FrameworkElement relativeTo) => default; }
+    public class MouseButtonEventArgs : MouseEventArgs { }
+    public delegate void MouseEventHandler(object sender, MouseEventArgs e);
+    public delegate void MouseButtonEventHandler(object sender, MouseButtonEventArgs e);
+}
 namespace System.Windows.Media
 {
+    public struct Color { public static Color FromRgb(byte r, byte g, byte b) => default; }
+    public class SolidColorBrush : Brush { public SolidColorBrush(Color c) { } }
     public class FontFamily { public FontFamily(string n) { } }
     public class Brush { }
     public static class Brushes { public static Brush DimGray => null; }
@@ -59,8 +74,13 @@ namespace System.Windows.Controls
     public enum Dock { Left, Top, Right, Bottom }
     public enum Orientation { Horizontal, Vertical }
     public enum ScrollBarVisibility { Disabled, Auto }
-    public class UIElementCollection { public void Add(FrameworkElement e) { } }
-    public class Panel : FrameworkElement { public UIElementCollection Children { get; } = new UIElementCollection(); }
+    public class UIElementCollection { public void Add(FrameworkElement e) { } public void Clear() { } }
+    public class Panel : FrameworkElement { public UIElementCollection Children { get; } = new UIElementCollection(); public Brush Background { get; set; } }
+    public class Canvas : Panel { public static void SetLeft(FrameworkElement e, double v) { } public static void SetTop(FrameworkElement e, double v) { } }
+    public class ScrollViewer : FrameworkElement { public object Content { get; set; } public ScrollBarVisibility HorizontalScrollBarVisibility { get; set; }
+        public ScrollBarVisibility VerticalScrollBarVisibility { get; set; } }
+    public class Border : FrameworkElement { public Brush Background { get; set; } public Brush BorderBrush { get; set; } public Thickness BorderThickness { get; set; }
+        public CornerRadius CornerRadius { get; set; } public FrameworkElement Child { get; set; } }
     public class DockPanel : Panel { public static void SetDock(FrameworkElement e, Dock d) { } }
     public class StackPanel : Panel { public Orientation Orientation { get; set; } }
     public class TextBlock : FrameworkElement { public string Text { get; set; } public TextWrapping TextWrapping { get; set; } public double FontSize { get; set; }

@@ -23,20 +23,27 @@ namespace PedalRoboSing
         readonly TextBox _box;
         readonly TextBlock _preview;
         HashSet<string> _rhymes;
+        readonly MelodyEditor _melody = new MelodyEditor();
+        readonly List<string> _scores = new List<string>();      // one per line of the box
+        List<string> _lastLines = new List<string>();
+        int _shownLine = -1;
+        string _shownText;
 
         const string Help =
             "One phrase per line: line 1 is Phrase 1, line 2 is Phrase 2, and so on (up to 100).\n" +
             "The strip below shows the syllables (split by \u00B7) that Syllable mode steps through, one per note.\n" +
             "Punctuation shapes the delivery:  ,  short pause   .  falling end   ?  rising end   !  bigger accents.\n" +
             "Fix a mispronounced word with phonemes in brackets, e.g.  [R IY B AH1 Z]  (1 marks the stressed vowel, _ is a pause).\n" +
-            "Vowels: IY IH EY EH AE AA AO OW UH UW AH AX ER AY AW OY   Consonants: P B T D K G CH JH F V TH DH S Z SH ZH HH M N NG L R W Y WH";
+            "Vowels: IY IH EY EH AE AA AO OW UH UW AH AX ER AY AW OY   Consonants: P B T D K G CH JH F V TH DH S Z SH ZH HH M N NG L R W Y WH\n" +
+            "Melody (Play Mode: Line): each block is a syllable of the line under the caret. Drag it up or down for pitch, sideways for the silence before it, " +
+            "and drag its right edge for length. One note in the pattern then sings the whole line.";
 
         public PhraseEditorWindow(PedalRoboSingMachine machine)
         {
             _m = machine;
             Title = "Pedal RoboSing - Phrases";
             Width = 720;
-            Height = 560;
+            Height = 860;
             MinWidth = 420;
             MinHeight = 300;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -60,6 +67,7 @@ namespace PedalRoboSing
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Margin = new Thickness(0, 8, 0, 0),
             };
+            buttons.Children.Add(MakeButton("Sing line", (s, e) => SingLine()));
             buttons.Children.Add(MakeButton("Speak line", (s, e) => SpeakLine()));
             buttons.Children.Add(MakeButton("Apply", (s, e) => Apply()));
             buttons.Children.Add(MakeButton("OK", (s, e) => { Apply(); Close(); }));
@@ -75,6 +83,16 @@ namespace PedalRoboSing
                 Foreground = Brushes.DimGray,
                 MinHeight = 48,
             };
+            DockPanel.SetDock(_melody.View, Dock.Bottom);
+            root.Children.Add(_melody.View);
+            _melody.Changed += () =>
+            {
+                if (_shownLine < 0) return;
+                while (_scores.Count <= _shownLine) _scores.Add("");
+                _scores[_shownLine] = _melody.Score.IsDefault ? "" : _melody.Score.ToText();
+            };
+            _scores.AddRange(machine.GetScores());
+
             DockPanel.SetDock(_preview, Dock.Bottom);
             root.Children.Add(_preview);
 
@@ -90,7 +108,8 @@ namespace PedalRoboSing
                 Text = string.Join(Environment.NewLine, machine.GetPhrases()),
             };
             _box.SelectionChanged += (s, e) => UpdatePreview();
-            _box.TextChanged += (s, e) => { _rhymes = null; UpdatePreview(); };
+            _lastLines = AllLines();
+            _box.TextChanged += (s, e) => { _rhymes = null; RealignScores(); UpdatePreview(); };
             root.Children.Add(_box);                   // last child fills the remaining space
 
             Content = root;
@@ -136,6 +155,7 @@ namespace PedalRoboSing
                 }
                 _rhymes ??= Planner.FindRhymes(Lines());        // against every line in the box
                 var u = Planner.Build(line, SpeakMode.Speak, _rhymes);
+                ShowMelody(idx, line, u);
                 _preview.Text = $"Phrase {idx + 1}: " + (u.Phonetic.Length > 0 ? u.Phonetic : "(silent)")
                               + (u.SoundNotes.Length > 0 ? "\n" + u.SoundNotes : "")
                               + (u.WordCount > 0 ? $"    [{u.WordCount} words, {u.SylS.Length} syllables, {u.PhS.Length} phonemes, {u.Length / 1000f:0.0} s]" : "");
@@ -144,6 +164,45 @@ namespace PedalRoboSing
             {
                 _preview.Text = "Preview failed: " + ex.Message;
             }
+        }
+
+        // Every line of the box, including blank ones, so indexes match the caret's line number
+        List<string> AllLines()
+        {
+            var lines = new List<string>((_box.Text ?? "").Split('\n'));
+            for (int i = 0; i < lines.Count; i++) lines[i] = lines[i].TrimEnd('\r');
+            return lines;
+        }
+
+        // Melodies are kept per line. When lines are inserted or removed, each line that
+        // still has the same words takes its melody with it.
+        void RealignScores()
+        {
+            var now = AllLines();
+            if (now.Count != _lastLines.Count)
+            {
+                var byText = new Dictionary<string, string>();
+                for (int i = 0; i < _lastLines.Count && i < _scores.Count; i++)
+                    if (_scores[i].Length > 0 && !byText.ContainsKey(_lastLines[i])) byText[_lastLines[i]] = _scores[i];
+                _scores.Clear();
+                foreach (var line in now) _scores.Add(byText.TryGetValue(line, out var sc) ? sc : "");
+            }
+            _lastLines = now;
+            _shownLine = -1;                       // force the melody panel to reload
+        }
+
+        void ShowMelody(int idx, string line, Utterance u)
+        {
+            if (idx == _shownLine && line == _shownText) return;
+            _shownLine = idx; _shownText = line;
+            while (_scores.Count <= idx) _scores.Add("");
+            _melody.Load(u.SylText, LineScore.Parse(_scores[idx], u.SylS.Length), _m.TicksPerBeat);
+        }
+
+        void SingLine()
+        {
+            CurrentLine(out int idx, out string line);
+            _m.AuditionLine(line, idx < _scores.Count ? _scores[idx] : "");
         }
 
         List<string> Lines()
@@ -155,7 +214,13 @@ namespace PedalRoboSing
             return lines;
         }
 
-        void Apply() => _m.SetPhrases(Lines());
+        void Apply()
+        {
+            var lines = Lines();
+            var scores = new List<string>();
+            for (int i = 0; i < lines.Count; i++) scores.Add(i < _scores.Count ? _scores[i] : "");
+            _m.SetPhrases(lines, scores);
+        }
 
         void SpeakLine()
         {

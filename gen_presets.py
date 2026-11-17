@@ -58,6 +58,9 @@ PRESETS = {
     "20 Hard Edges":         dict(CLEAN, **{"Play Mode": 2, "Hold": 0, "Cons Tune": 60, "React Ring": 127, "React Level": 100}),
     "21 Rhyme Spotlight":    dict(CLEAN, **{"Tune": 30, "Vib Depth": 25, "React Rhyme": 127, "Glide": 15}),
     "22 Tongue Twister":     dict(CLEAN, **{"Cons Tune": 50, "React Allit": 127, "React Ring": 100}),
+    "23 Line Singer":        dict(CLEAN, **{"Play Mode": 5, "Tune": 50, "Vib Depth": 30, "Portamento": 20, "Glide": 15, "Cons Tune": 40,
+                                    "React Level": 95, "React Tune": 120, "React Size": 90, "React Ring": 110, "React Vib": 120,
+                                    "React Rhyme": 100, "React Allit": 100}),
 }
 
 PRESETS_FULL = {k: dict(PLAIN, **v) for k, v in PRESETS.items()}

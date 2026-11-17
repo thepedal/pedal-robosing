@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 1.3.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 1.4.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 The voice is original: a formant model converted to filter coefficients as it
 plays, with no speech ROM data and no code from any other synthesiser. Word
@@ -33,7 +33,38 @@ dictionary doesn't have.
 | Syllable | Sings the next syllable. With Hold on, the vowel sustains until note-off, then the closing consonants are sung. A new note without a note-off moves straight to the next syllable. |
 | Phoneme | The same, one phoneme per note. |
 | Sync | Speaks the phrase with one syllable every *Sync Step* ticks. Short syllables hold their vowel to fill the slot; long ones are squeezed. |
+| Line | One note sings the whole line from the melody drawn for it in the phrase editor. See below. |
 | Scrub | The note just turns the voice on. The **Position** column says where in the window the mouth is; **Glide** sets how fast it travels there; **Scan** makes it travel on its own, forwards or backwards, looping. |
+
+### Line mode: a melody kept with the words (trial, v1.4)
+
+Writing a sung line into pattern rows means counting syllables and placing
+note-offs by hand. In Line mode the melody lives with the line instead. Open
+**Edit Phrases**, put the caret on a line, and the panel under the text shows
+one block per syllable on a grid: time runs left to right in ticks (lighter
+lines every beat, brighter every four), pitch up and down in semitones around
+the middle row, which is the note you play.
+
+- Drag a block **up or down** to change its pitch (12 semitones either way).
+- Drag a block **sideways** to change the silence before it.
+- Drag a block's **right edge** to change its length.
+- **Sing line** plays the line under the caret with its melody.
+
+In the pattern, set Play Mode to Line (or load the Line Singer preset) and put
+one note on the row where the line starts, with its Phrase number. The note
+sets the key; the line sings itself and ends with its last consonant, so no
+note-off is needed. A new note restarts it. A line with no melody drawn sings
+two ticks a syllable on the played note.
+
+Because the machine knows the whole line in advance, each syllable's opening
+consonants are sung just before its beat, so the vowel lands on it (measured
+within about 10 ms on an ordinary line). The first syllable cannot start before
+its note, so its vowel is late by its consonants unless you give it a gap.
+
+Melodies are saved with the song. If you edit a line's words its blocks are
+kept in order; if the syllable count changes, blocks are added or dropped at
+the end. A melody belongs to the Speak text mode; in Spell modes Line uses the
+plain two-ticks melody. Word and Words are ignored in Line mode.
 
 In Syllable and Phoneme modes the step counter wraps round the Word/Words
 window, restarts when Phrase, Word or Words is written, and can be set for a
@@ -149,7 +180,7 @@ track 1's mouth and only supply pitch, so a chord speaks as one voice.
 Scale Bells, Chant in Time, Choir One Mouth, Tuned Percussion, Scrub Pad,
 Backwards Loop, Speech Melody, Whisper Hiss, Chip Talker, Chip Syllables,
 Spelling Bee, Broken Batteries, Giant Drone, Tiny Robot, Reactive Singer, Open
-Vowels Ring, Rubber Mouth, Hard Edges, Rhyme Spotlight and Tongue Twister. They set the globals
+Vowels Ring, Rubber Mouth, Hard Edges, Rhyme Spotlight, Tongue Twister and Line Singer. They set the globals
 only. `gen_presets.py --check` verifies the bundle against the source.
 
 ## How it works
@@ -223,6 +254,17 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 `midi_to_robosing.py` beside it.
 
 ## Changes
+
+**1.4.0** (trial of line melodies)
+- Play Mode gains **Line**: one pattern note sings a whole line from a melody
+  stored with it (a gap, a length and a pitch per syllable).
+- The phrase editor gains a melody panel for the line under the caret, and a
+  Sing line button.
+- Vowels land on their beats in Line mode.
+- Melodies are saved with the song; songs saved by earlier versions load as
+  before and simply have none.
+- The melody panel has not been seen running: it was checked for compile
+  errors against stand-ins only. Expect rough edges.
 
 **1.3.0**
 - The CMU Pronouncing Dictionary is built in: 124,911 words, packed to 750 KB

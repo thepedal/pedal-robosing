@@ -46,6 +46,7 @@ static class Smoke
                 Console.WriteLine($"{args[i],-12} {Planner.Build(args[i], SpeakMode.Speak).Phonetic.Replace(" .", "")}");
             return;
         }
+        if (args.Length == 2 && args[0] == "line") { LineDemo.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "react") { ReactDemo.Run(args[1]); return; }
         if (args.Length == 3 && args[0] == "song") { SongPlayer.Run(args[1], args[2]); return; }
 

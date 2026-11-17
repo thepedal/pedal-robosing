@@ -17,6 +17,8 @@ namespace PedalRoboSing
     {
         public int Version { get; set; } = 1;
         public List<string> Phrases { get; set; } = new List<string>();
+        /// <summary>Line melodies, one per phrase ("gap,length,pitch" per syllable); empty = none. Added in v1.4.</summary>
+        public List<string> Scores { get; set; } = new List<string>();
     }
 
     public sealed class PhraseBank
@@ -38,6 +40,8 @@ namespace PedalRoboSing
         };
 
         public readonly string[] Texts;
+        public readonly string[] ScoreTexts;
+        readonly LineScore[] _scores;         // null where a line has no melody of its own
         readonly Utterance[][] _byMode;       // [mode][phrase]
 
         /// <summary>Rimes shared by different words anywhere in the list.</summary>
@@ -45,11 +49,17 @@ namespace PedalRoboSing
 
         public int Count => Texts.Length;
 
-        public PhraseBank(IReadOnlyList<string> texts)
+        public PhraseBank(IReadOnlyList<string> texts, IReadOnlyList<string> scores = null)
         {
             int n = Math.Min(texts?.Count ?? 0, MaxPhrases);
             Texts = new string[n];
-            for (int i = 0; i < n; i++) Texts[i] = texts[i] ?? "";
+            ScoreTexts = new string[n];
+            _scores = new LineScore[n];
+            for (int i = 0; i < n; i++)
+            {
+                Texts[i] = texts[i] ?? "";
+                ScoreTexts[i] = scores != null && i < scores.Count ? scores[i] ?? "" : "";
+            }
             Rhymes = Planner.FindRhymes(Texts);
             _byMode = new Utterance[3][];
             for (int m = 0; m < 3; m++)
@@ -61,6 +71,9 @@ namespace PedalRoboSing
                     catch { _byMode[m][i] = Utterance.Empty; }   // a bad line must never take the machine down
                 }
             }
+            for (int i = 0; i < n; i++)
+                if (ScoreTexts[i].Trim().Length > 0)
+                    _scores[i] = LineScore.Parse(ScoreTexts[i], _byMode[0][i].SylS.Length);
         }
 
         /// <summary>Phrase number is 1-based; out-of-range numbers wrap round the bank.</summary>
@@ -69,6 +82,13 @@ namespace PedalRoboSing
             if (Texts.Length == 0) return Utterance.Empty;
             int i = ((phraseNumber - 1) % Texts.Length + Texts.Length) % Texts.Length;
             return _byMode[Math.Clamp(mode, 0, 2)][i];
+        }
+
+        /// <summary>The line's melody, or null. It belongs to the spoken (Speak mode) syllables.</summary>
+        public LineScore ScoreFor(int phraseNumber)
+        {
+            if (Texts.Length == 0) return null;
+            return _scores[((phraseNumber - 1) % Texts.Length + Texts.Length) % Texts.Length];
         }
 
         public string TextFor(int phraseNumber)

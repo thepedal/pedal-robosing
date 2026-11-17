@@ -777,6 +777,7 @@ namespace PedalRoboSing.Speech
         static void BuildUnits(List<Item> items, List<Inst> insts, Utterance u)
         {
             var ss = new List<float>(); var sh = new List<float>(); var se = new List<float>(); var sw = new List<int>();
+            var sv = new List<float>(); var st = new List<string>(); var lab = new StringBuilder();
             var ps = new List<float>(); var ph = new List<float>(); var pe = new List<float>(); var pw = new List<int>();
             var sb = new StringBuilder();
             var g = new List<Inst>();
@@ -819,9 +820,12 @@ namespace PedalRoboSing.Speech
                 for (int j = 0; j < starts.Count; j++)
                 {
                     int a = starts[j], b = (j + 1 < starts.Count ? starts[j + 1] : g.Count) - 1;
-                    float s0 = g[a].T, e0 = g[b].T + g[b].D, h0 = -1f, best = 0f;
+                    float s0 = g[a].T, e0 = g[b].T + g[b].D, h0 = -1f, best = 0f, v0 = s0;
                     for (int k = a; k <= b; k++)
-                        if (g[k].Ph.IsVowel) { h0 = g[k].T + Math.Min(0.45f * g[k].D, 50f); break; }
+                        if (g[k].Ph.IsVowel) { h0 = g[k].T + Math.Min(0.45f * g[k].D, 50f); v0 = g[k].T; break; }
+                    lab.Clear();
+                    for (int k = a; k <= b; k++) lab.Append(k > a ? " " : "").Append(g[k].Ph.Name.ToLowerInvariant());
+                    sv.Add(v0); st.Add(lab.ToString());
                     if (h0 < 0f)
                         for (int k = a; k <= b; k++)
                             if (!g[k].Ph.IsStopLike && g[k].D > best) { best = g[k].D; h0 = g[k].T + g[k].D * 0.5f; }
@@ -840,6 +844,7 @@ namespace PedalRoboSing.Speech
             }
 
             u.SylS = ss.ToArray(); u.SylH = sh.ToArray(); u.SylE = se.ToArray(); u.SylWord = sw.ToArray();
+            u.SylV = sv.ToArray(); u.SylText = st.ToArray();
             u.PhS = ps.ToArray(); u.PhH = ph.ToArray(); u.PhE = pe.ToArray(); u.PhWord = pw.ToArray();
             u.Phonetic = sb.ToString();
         }

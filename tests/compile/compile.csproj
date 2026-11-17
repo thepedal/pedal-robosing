@@ -19,5 +19,6 @@
     <Compile Include="Demo.cs" />
     <Compile Include="SongPlayer.cs" />
     <Compile Include="ReactDemo.cs" />
+    <Compile Include="LineDemo.cs" />
   </ItemGroup>
 </Project>

@@ -48,6 +48,8 @@ namespace PedalRoboSing.Speech
         // a sustained note freezes the mouth) and an end, plus the word it belongs to.
         public float[] SylS = Array.Empty<float>(), SylH = Array.Empty<float>(), SylE = Array.Empty<float>();
         public int[] SylWord = Array.Empty<int>();
+        public float[] SylV = Array.Empty<float>();        // where the syllable's vowel starts (Line mode puts this on the beat)
+        public string[] SylText = Array.Empty<string>();   // its phonemes, for the melody editor's labels
         public float[] PhS = Array.Empty<float>(), PhH = Array.Empty<float>(), PhE = Array.Empty<float>();
         public int[] PhWord = Array.Empty<int>();
 

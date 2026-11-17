@@ -11,6 +11,8 @@
 //   Sync    plays syllable after syllable, each fitted to a slot of N ticks
 //   Scrub   sits wherever the Position column puts it, optionally scanning
 //   Follow  copies another voice's mouth, so a chord speaks as one
+//   Line    sings a whole line from its own melody: a length, pitch and gap per
+//           syllable, with each vowel landing on its beat
 //
 // Every frame the mouth's formants are (optionally) pulled toward the harmonics
 // of the note or the tones of a scale, turned into an all-pole polynomial, then
@@ -34,7 +36,7 @@ namespace PedalRoboSing.Speech
         // formant filter (low-heavy sources excite F1 harder than the chirp).
         static readonly float[] ExcTrim = { 1.0f, 0.5f, 0.5f, 0.45f, 1.0f };
 
-        enum Kind { Run, Seg, Sync, Scrub, Follow }
+        enum Kind { Run, Seg, Sync, Scrub, Follow, Line }
 
         // ── Per-buffer settings, written by the machine before rendering ─────
         public int   ChipRate = 8000;
@@ -82,7 +84,7 @@ namespace PedalRoboSing.Speech
         // ── Playhead ─────────────────────────────────────────────────────────
         struct Req
         {
-            public Kind Kind; public Utterance U; public LpcVoice Leader;
+            public Kind Kind; public Utterance U; public LpcVoice Leader; public LineScore Score;
             public float A, B, C, Slot; public int I0, I1;
             public float Midi, Amp;
         }
@@ -94,6 +96,12 @@ namespace PedalRoboSing.Speech
         float _segS, _segH, _segE, _rate, _holdLeft;
         int _phase, _sylIdx, _sylLast;
         float _scanOff, _refSemis;
+        LineScore _score;                       // Line mode
+        int _lineStep;
+        float _lineClock, _lineNom, _lineNextNom, _lineWait, _lineBase;
+        bool _resting, _vowelSeen, _lineSettled;
+        /// <summary>Test hook: called with (syllable, ms since the line started) when a syllable's vowel begins.</summary>
+        public Action<int, float> LineTrace;
         int _fi, _si, _pi, _qi;
         FeelKey _q = FeelKey.Neutral, _qRaw = FeelKey.Neutral;
         float _consEff, _vibMul = 1f;
@@ -146,6 +154,10 @@ namespace PedalRoboSing.Speech
         public void StartScrub(Utterance u, float tStart, float tEnd, float midi, float amp) =>
             Start(new Req { Kind = Kind.Scrub, U = u, A = tStart, B = tEnd, Midi = midi, Amp = amp }, true);
 
+        /// <summary>Sing the whole line from its melody (null = two ticks a syllable, all on the note).</summary>
+        public void StartLine(Utterance u, LineScore score, float midi, float amp) =>
+            Start(new Req { Kind = Kind.Line, U = u, Score = score, Midi = midi, Amp = amp }, false);
+
         public void StartFollow(LpcVoice leader, float midi, float amp) =>
             Start(new Req { Kind = Kind.Follow, U = Utterance.Empty, Leader = leader, Midi = midi, Amp = amp }, true);
 
@@ -158,8 +170,8 @@ namespace PedalRoboSing.Speech
                 {
                     // Same breath: move the mouth and the pitch, keep the filter running
                     _pending = false;
-                    SetPlayer(r, false);
                     _noteMidi = r.Midi; _amp = r.Amp;
+                    SetPlayer(r, false);
                     _gainTarget = 1f;
                     return;
                 }
@@ -191,8 +203,8 @@ namespace PedalRoboSing.Speech
         void Begin(in Req r)
         {
             _pending = false;
-            SetPlayer(r, true);
             _noteMidi = r.Midi; _amp = r.Amp;
+            SetPlayer(r, true);
             Array.Clear(_bd, 0, _bd.Length);
             Array.Clear(_comb, 0, _comb.Length);
             _phaseOsc = 0f; _vibPhase = 0f; _vibMs = 0f;
@@ -236,7 +248,68 @@ namespace PedalRoboSing.Speech
                     _tStart = r.A; _tEnd = r.B; _scanOff = 0f;
                     if (fresh) _t = ScrubTarget();
                     break;
+                case Kind.Line:
+                    _tStart = 0; _tEnd = _u.Length;
+                    _score = r.Score; _lineBase = r.Midi;
+                    _lineClock = 0f; _lineStep = 0; _resting = false;
+                    _lineNom = Gap(0) * TickMs;
+                    _noteMidi = _lineBase + Pitch(0);
+                    _t = _u.SylS.Length > 0 ? _u.SylS[0] : 0f;
+                    LineEnter();
+                    break;
             }
+        }
+
+        // ── Line mode: syllables on a tick grid ──────────────────────────────
+        // _lineNom is where the current syllable's vowel belongs, in ms from the
+        // start of the line; _lineClock is how far the line has actually got.
+        // A syllable starts early by the length of its opening consonants, taken
+        // from the syllable or rest before it, so the vowel lands on the beat.
+        int Gap(int k) => _score?.GapAt(k) ?? 0;
+        int Len(int k) => _score?.LenAt(k) ?? LineScore.DefaultLen;
+        int Pitch(int k) => _score?.PitchAt(k) ?? 0;
+
+        float Onset(int k) =>
+            (uint)k < (uint)_u.SylS.Length ? (_u.SylV[k] - _u.SylS[k]) / Math.Max(0.05f, Speed) : 0f;
+
+        // `late` is how far the clock has already run past the moment this step was due
+        void LineEnter(float late = 0f)
+        {
+            if (_lineStep >= _u.SylS.Length) { _speaking = false; _resting = false; return; }
+            float start = Math.Max(_lineClock - late, _lineNom - Onset(_lineStep));
+            if (start > _lineClock + 1f) { _resting = true; _lineWait = start; _lineSettled = false; }
+            else LineBeginSyllable(_lineClock - start, true);
+        }
+
+        void LineBeginSyllable(float late, bool maySettle)
+        {
+            int k = _lineStep;
+            float start = _lineClock - late;
+            float nomEnd = _lineNom + Len(k) * TickMs;
+            _lineNextNom = nomEnd + Gap(k + 1) * TickMs;
+            float end = k + 1 < _u.SylS.Length ? Math.Min(nomEnd, _lineNextNom - Onset(k + 1)) : nomEnd;
+            float slot = Math.Max(30f, end - start);
+
+            // A syllable squeezed into a short slot runs faster, so its consonants take
+            // less time than allowed and the vowel would come early: wait out the difference.
+            float natural = Math.Max(1f, _u.SylE[k] - _u.SylS[k]) / Math.Max(0.05f, Speed);
+            if (maySettle && slot < natural && _lineNom - start >= Onset(k) - 1f)    // only if it did start early
+            {
+                float wait = Onset(k) * (1f - slot / natural) - late;
+                if (wait > 4f) { _resting = true; _lineSettled = true; _lineWait = _lineClock + wait; return; }
+            }
+
+            _resting = false;
+            _noteMidi = _lineBase + Pitch(k);
+            _vowelSeen = false;
+            SetSeg(_u.SylS[k], _u.SylH[k], _u.SylE[k], slot, Math.Max(0f, late));
+        }
+
+        void LineNext(float late)
+        {
+            _lineStep++;
+            _lineNom = _lineNextNom;
+            LineEnter(late);
         }
 
         void SetSeg(float s, float h, float e, float slot, float carryMs)
@@ -275,7 +348,17 @@ namespace PedalRoboSing.Speech
 
                 case Kind.Seg:
                 case Kind.Sync:
+                case Kind.Line:
                     if (!_speaking) break;
+                    if (_kind == Kind.Line)
+                    {
+                        _lineClock += dt;
+                        if (_resting)
+                        {
+                            if (_lineClock >= _lineWait) LineBeginSyllable(_lineClock - _lineWait, !_lineSettled);
+                            break;
+                        }
+                    }
                     if (_phase == 0)
                     {
                         _t += dt * _rate;
@@ -296,6 +379,12 @@ namespace PedalRoboSing.Speech
                     }
                     else _t += dt * _rate;
 
+                    if (_kind == Kind.Line && !_vowelSeen && _lineStep < _u.SylV.Length && _t >= _u.SylV[_lineStep])
+                    {
+                        _vowelSeen = true;
+                        LineTrace?.Invoke(_lineStep, _lineClock);
+                    }
+
                     if (_phase == 2 && _t >= _segE)
                     {
                         if (_kind == Kind.Sync && _sylIdx < _sylLast)
@@ -304,6 +393,7 @@ namespace PedalRoboSing.Speech
                             _sylIdx++;
                             SetSeg(_u.SylS[_sylIdx], _u.SylH[_sylIdx], _u.SylE[_sylIdx], TickMs * SyncTicks, carry);
                         }
+                        else if (_kind == Kind.Line) LineNext((_t - _segE) / _rate);
                         else _speaking = false;
                     }
                     break;
@@ -379,10 +469,10 @@ namespace PedalRoboSing.Speech
                 semis = u.SamplePitch(t, ref _pi);
                 u.SampleFeel(t, ref _qi, ref _qRaw);
 
-                if (_kind == Kind.Seg) semis -= _refSemis;
+                if (_kind == Kind.Seg || _kind == Kind.Line) semis -= _refSemis;
                 else if (_kind == Kind.Scrub && !InflSnap) semis = 0f;
 
-                if (!_speaking) { av = 0; an = 0; }
+                if (!_speaking || _resting) { av = 0; an = 0; }
                 else if (_kind == Kind.Run)
                 {
                     // 5 ms fades where a word window chops the phrase

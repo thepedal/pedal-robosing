@@ -32,7 +32,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "1.3.0";
+        internal const string Version = "1.4.0";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;
@@ -67,6 +67,7 @@ namespace PedalRoboSing
 
         volatile PhraseBank _bank = new PhraseBank(PhraseBank.Defaults);
         volatile Utterance _audition;                // set by the editor's Speak line button
+        volatile LineScore _auditionScore;           // set with it by Sing line
 
         // Per-track held values and pending note events (setters run before Work)
         readonly int[] _velocity = new int[MaxVoices];
@@ -145,8 +146,8 @@ namespace PedalRoboSing
         [ParameterDecl(Name = "Breath", Description = "Adds aspiration noise to voiced sounds", MinValue = 0, MaxValue = 127, DefValue = 0)]
         public int Breath { get; set; } = 0;
 
-        [ParameterDecl(Name = "Play Mode", Description = "How notes move the mouth through the phrase", MinValue = 0, MaxValue = 4, DefValue = 1,
-            ValueDescriptions = new[] { "Phrase", "Syllable", "Phoneme", "Sync", "Scrub" })]
+        [ParameterDecl(Name = "Play Mode", Description = "How notes move the mouth through the phrase", MinValue = 0, MaxValue = 5, DefValue = 1,
+            ValueDescriptions = new[] { "Phrase", "Syllable", "Phoneme", "Sync", "Scrub", "Line" })]
         public int PlayMode { get; set; } = 1;
 
         [ParameterDecl(Name = "Hold", Description = "Syllable/Phoneme: sustain the sound while the note is held", MinValue = 0, MaxValue = 1, DefValue = 1,
@@ -322,10 +323,21 @@ namespace PedalRoboSing
         // ── Phrase bank I/O ───────────────────────────────────────────────────
         public string[] GetPhrases() => (string[])_bank.Texts.Clone();
 
-        public void SetPhrases(IReadOnlyList<string> lines) => _bank = new PhraseBank(lines);
+        public string[] GetScores() => (string[])_bank.ScoreTexts.Clone();
+
+        public void SetPhrases(IReadOnlyList<string> lines, IReadOnlyList<string> scores = null) => _bank = new PhraseBank(lines, scores);
+
+        /// <summary>Editor preview: sing a line with its melody on voice 1, from the last note played there.</summary>
+        public void AuditionLine(string text, string score)
+        {
+            var u = Planner.Build(text ?? "", SpeakMode.Speak, _bank.Rhymes);
+            _auditionScore = LineScore.Parse(score, u.SylS.Length);
+            _audition = u;
+        }
 
         /// <summary>Editor preview: speak arbitrary text on voice 1 at the last note played there.</summary>
-        public void Audition(string text) => _audition = Planner.Build(text ?? "", (SpeakMode)Math.Clamp(Mode, 0, 2), _bank.Rhymes);
+        public void Audition(string text) { _auditionScore = null; _audition = AuditionBuild(text); }
+        Utterance AuditionBuild(string text) => Planner.Build(text ?? "", (SpeakMode)Math.Clamp(Mode, 0, 2), _bank.Rhymes);
 
         public RoboSingState MachineState
         {
@@ -333,12 +345,13 @@ namespace PedalRoboSing
             {
                 var s = new RoboSingState();
                 s.Phrases.AddRange(_bank.Texts);
+                s.Scores.AddRange(_bank.ScoreTexts);
                 return s;
             }
             set
             {
                 if (value?.Phrases == null) return;
-                _bank = new PhraseBank(value.Phrases);
+                _bank = new PhraseBank(value.Phrases, value.Scores);
             }
         }
 
@@ -393,6 +406,9 @@ namespace PedalRoboSing
                 case 4:
                     v.ScrubTarget01 = _position[i] / 1000f;
                     v.StartScrub(u, ts, te, midi, amp);
+                    break;
+                case 5:                                           // the line's own melody; one note starts it
+                    v.StartLine(u, Mode == 0 ? bank.ScoreFor(_phrase[i]) : null, midi, amp);
                     break;
                 default:
                     v.StartPhrase(u, ts, te, midi, amp);
@@ -471,8 +487,10 @@ namespace PedalRoboSing
             var aud = _audition;
             if (aud != null)
             {
-                _audition = null;
-                _voices[0].StartPhrase(aud, 0f, aud.Length, NoteMidi(_lastNote[0]), _velocity[0] / 100f);
+                var sc = _auditionScore;
+                _audition = null; _auditionScore = null;
+                if (sc != null) _voices[0].StartLine(aud, sc, NoteMidi(_lastNote[0]), _velocity[0] / 100f);
+                else _voices[0].StartPhrase(aud, 0f, aud.Length, NoteMidi(_lastNote[0]), _velocity[0] / 100f);
             }
 
             bool any = false;
@@ -540,6 +558,12 @@ namespace PedalRoboSing
                     }
                 };
             }
+        }
+
+        /// <summary>Rows per beat, for the melody editor's grid (4 until the host has told us).</summary>
+        public int TicksPerBeat
+        {
+            get { try { int t = host?.MasterInfo?.TicksPerBeat ?? 4; return t > 0 ? t : 4; } catch { return 4; } }
         }
 
         void OpenEditor()
