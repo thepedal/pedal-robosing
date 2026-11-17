@@ -32,7 +32,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "1.4.0";
+        internal const string Version = "1.4.4";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;
@@ -545,16 +545,14 @@ namespace PedalRoboSing
                     Command = new SimpleCommand()
                     {
                         CanExecuteDelegate = p => true,
-                        ExecuteDelegate = p => MessageBox.Show(
+                        ExecuteDelegate = p => Theme.ShowMessage(null, "About Pedal RoboSing",
                             $"Pedal RoboSing   v{Version}\n\n" +
-                            "Vocal-tract instrument: typed phrases become mouth movement that notes play a\n" +
-                            "syllable at a time, in sync, or scrubbed, with resonances tuned to the music.\n" +
+                            "Vocal-tract instrument: typed phrases become mouth movement that notes play a syllable at a time, " +
+                            "in sync, scrubbed, or as whole lines with their own melody, with resonances tuned to the music. " +
                             "Original rules and formant model; no speech ROM data.\n\n" +
-                            "Pronunciations from the CMU Pronouncing Dictionary,\n" +
-                            "Copyright (C) 1993-2015 Carnegie Mellon University.\n\n" +
+                            "Pronunciations from the CMU Pronouncing Dictionary, Copyright (C) 1993-2015 Carnegie Mellon University.\n\n" +
                             "github.com/thepedal/pedal-robosing\n" +
-                            "GPL-3.0-or-later",
-                            "About Pedal RoboSing")
+                            "GPL-3.0-or-later")
                     }
                 };
             }
@@ -565,6 +563,17 @@ namespace PedalRoboSing
         {
             get { try { int t = host?.MasterInfo?.TicksPerBeat ?? 4; return t > 0 ? t : 4; } catch { return 4; } }
         }
+
+        /// <summary>Ticks into the line that is being sung (any track), or -1. Read from the UI thread; approximate.</summary>
+        public float LineProgress(string phonetic)
+        {
+            if (string.IsNullOrEmpty(phonetic)) return -1f;
+            foreach (var v in _voices) if (v.TryLineProgress(phonetic, out float t)) return t;
+            return -1f;
+        }
+
+        /// <summary>The last note played on track 1 as a semitone number (C-0 = 0): the key Sing line uses.</summary>
+        public int LastNoteNumber => (int)NoteMidi(_lastNote[0]);
 
         void OpenEditor()
         {

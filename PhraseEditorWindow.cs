@@ -29,62 +29,115 @@ namespace PedalRoboSing
         int _shownLine = -1;
         string _shownText;
 
+        string _shownPhonetic;
+
+        System.Windows.Threading.DispatcherTimer _timer;
+
+        const string Intro =
+            "One phrase per line (line 1 is Phrase 1). The grid shows the melody of the line under the caret: drag a block up or down for pitch, " +
+            "sideways for the silence before it, and its right edge for length. With Play Mode on Line, one note in the pattern sings the whole line.";
+
         const string Help =
+            "PHRASES\n" +
             "One phrase per line: line 1 is Phrase 1, line 2 is Phrase 2, and so on (up to 100).\n" +
-            "The strip below shows the syllables (split by \u00B7) that Syllable mode steps through, one per note.\n" +
-            "Punctuation shapes the delivery:  ,  short pause   .  falling end   ?  rising end   !  bigger accents.\n" +
-            "Fix a mispronounced word with phonemes in brackets, e.g.  [R IY B AH1 Z]  (1 marks the stressed vowel, _ is a pause).\n" +
-            "Vowels: IY IH EY EH AE AA AO OW UH UW AH AX ER AY AW OY   Consonants: P B T D K G CH JH F V TH DH S Z SH ZH HH M N NG L R W Y WH\n" +
-            "Melody (Play Mode: Line): each block is a syllable of the line under the caret. Drag it up or down for pitch, sideways for the silence before it, " +
-            "and drag its right edge for length. One note in the pattern then sings the whole line.";
+            "Punctuation shapes spoken delivery:  ,  short pause   .  falling end   ?  rising end   !  bigger accents.\n" +
+            "The strip under the text shows how the line will be pronounced, with \u00B7 between syllables, and any rhymes and alliteration found.\n\n" +
+            "FIXING A WORD\n" +
+            "Put phonemes in brackets, e.g.  [R IY B AH1 Z]  (1 marks the stressed vowel, _ is a pause).\n" +
+            "Vowels: IY IH EY EH AE AA AO OW UH UW AH AX ER AY AW OY\n" +
+            "Consonants: P B T D K G CH JH F V TH DH S Z SH ZH HH M N NG L R W Y WH\n\n" +
+            "MELODY (Play Mode: Line)\n" +
+            "Each block is one syllable of the line under the caret.\n" +
+            "Drag it up or down to change its pitch; the highlighted row is the note played in the pattern.\n" +
+            "Drag it sideways to change the silence before it. Drag its right edge to change its length.\n" +
+            "Sing line plays it from the last note played on track 1. The orange marker shows where the voice is.\n" +
+            "Drag the bar between the text and the grid to resize them.";
 
         public PhraseEditorWindow(PedalRoboSingMachine machine)
         {
             _m = machine;
             Title = "Pedal RoboSing - Phrases";
-            Width = 720;
-            Height = 860;
+            Width = 900;
+            Height = 820;
             MinWidth = 420;
             MinHeight = 300;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             ShowInTaskbar = false;
+            Theme.Apply(this);
 
             var root = new DockPanel { Margin = new Thickness(8) };
 
-            var help = new TextBlock
-            {
-                Text = Help,
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 0, 0, 6),
-                FontSize = 11.5,
-            };
-            DockPanel.SetDock(help, Dock.Top);
-            root.Children.Add(help);
+            var intro = new TextBlock { Text = Intro, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 6), FontSize = 11.5, Foreground = Theme.DimInk };
+            DockPanel.SetDock(intro, Dock.Top);
+            root.Children.Add(intro);
 
-            var buttons = new StackPanel
+            // Bottom bar: view controls on the left, actions on the right
+            var bar = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
+            var left = new StackPanel { Orientation = Orientation.Horizontal };
+            left.Children.Add(Theme.MakeButton("Zoom \u2212", (s, e) => _melody.Zoom(-1), 64, 0));
+            left.Children.Add(Theme.MakeButton("Zoom +", (s, e) => _melody.Zoom(+1), 64));
+            left.Children.Add(Theme.MakeButton("Help", (s, e) => Theme.ShowMessage(this, "Pedal RoboSing - Phrases help", Help), 64));
+            DockPanel.SetDock(left, Dock.Left);
+            bar.Children.Add(left);
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+            buttons.Children.Add(Theme.MakeButton("Sing line", (s, e) => SingLine()));
+            buttons.Children.Add(Theme.MakeButton("Speak line", (s, e) => SpeakLine()));
+            buttons.Children.Add(Theme.MakeButton("Apply", (s, e) => Apply()));
+            buttons.Children.Add(Theme.MakeButton("OK", (s, e) => { Apply(); Close(); }));
+            buttons.Children.Add(Theme.MakeButton("Cancel", (s, e) => Close()));
+            bar.Children.Add(buttons);
+            DockPanel.SetDock(bar, Dock.Bottom);
+            root.Children.Add(bar);
+
+            // Middle: text, pronunciation strip, a draggable bar, then the melody with most of the room
+            var grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star), MinHeight = 48 });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(3, GridUnitType.Star), MinHeight = 80 });
+
+            _box = new TextBox
             {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 8, 0, 0),
+                AcceptsReturn = true,
+                AcceptsTab = false,
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 14,
+                TextWrapping = TextWrapping.NoWrap,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Text = string.Join(Environment.NewLine, machine.GetPhrases()),
+                Background = Theme.FieldBack, Foreground = Theme.Ink, BorderBrush = Theme.Edge, CaretBrush = Theme.Ink, SelectionBrush = Theme.Selection,
             };
-            buttons.Children.Add(MakeButton("Sing line", (s, e) => SingLine()));
-            buttons.Children.Add(MakeButton("Speak line", (s, e) => SpeakLine()));
-            buttons.Children.Add(MakeButton("Apply", (s, e) => Apply()));
-            buttons.Children.Add(MakeButton("OK", (s, e) => { Apply(); Close(); }));
-            buttons.Children.Add(MakeButton("Cancel", (s, e) => Close()));
-            DockPanel.SetDock(buttons, Dock.Bottom);
-            root.Children.Add(buttons);
+            Grid.SetRow(_box, 0);
+            grid.Children.Add(_box);
 
             _preview = new TextBlock
             {
                 FontFamily = new FontFamily("Consolas"),
                 TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 6, 0, 0),
-                Foreground = Brushes.DimGray,
-                MinHeight = 48,
+                Margin = new Thickness(0, 6, 0, 4),
+                Foreground = Theme.DimInk,
+                MinHeight = 34,
             };
-            DockPanel.SetDock(_melody.View, Dock.Bottom);
-            root.Children.Add(_melody.View);
+            Grid.SetRow(_preview, 1);
+            grid.Children.Add(_preview);
+
+            var splitter = new GridSplitter
+            {
+                Height = 6,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Center,
+                ResizeDirection = GridResizeDirection.Rows,
+                ResizeBehavior = GridResizeBehavior.PreviousAndNext,
+                Background = Theme.Divider,
+            };
+            Grid.SetRow(splitter, 2);
+            grid.Children.Add(splitter);
+
+            Grid.SetRow(_melody.View, 3);
+            grid.Children.Add(_melody.View);
+            root.Children.Add(grid);                   // last child fills the remaining space
+
             _melody.Changed += () =>
             {
                 if (_shownLine < 0) return;
@@ -93,40 +146,23 @@ namespace PedalRoboSing
             };
             _scores.AddRange(machine.GetScores());
 
-            DockPanel.SetDock(_preview, Dock.Bottom);
-            root.Children.Add(_preview);
-
-            _box = new TextBox
-            {
-                AcceptsReturn = true,
-                AcceptsTab = false,
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 13,
-                TextWrapping = TextWrapping.NoWrap,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                Text = string.Join(Environment.NewLine, machine.GetPhrases()),
-            };
             _box.SelectionChanged += (s, e) => UpdatePreview();
             _lastLines = AllLines();
             _box.TextChanged += (s, e) => { _rhymes = null; RealignScores(); UpdatePreview(); };
-            root.Children.Add(_box);                   // last child fills the remaining space
+
+            // Marker and note names follow the machine while the window is open
+            _timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
+            _timer.Tick += (s, e) =>
+            {
+                int note = _m.LastNoteNumber;
+                if (note != _melody.BaseNote) { _melody.BaseNote = note; _melody.Redraw(); }
+                _melody.SetPlayhead(_m.LineProgress(_shownPhonetic));
+            };
+            _timer.Start();
+            Closed += (s, e) => _timer.Stop();
 
             Content = root;
             Loaded += (s, e) => { _box.Focus(); UpdatePreview(); };
-        }
-
-        static Button MakeButton(string text, RoutedEventHandler onClick)
-        {
-            var b = new Button
-            {
-                Content = text,
-                MinWidth = 84,
-                Margin = new Thickness(6, 0, 0, 0),
-                Padding = new Thickness(10, 3, 10, 3),
-            };
-            b.Click += onClick;
-            return b;
         }
 
         // Line under the caret, worked out from the text so it doesn't depend on layout
@@ -194,7 +230,8 @@ namespace PedalRoboSing
         void ShowMelody(int idx, string line, Utterance u)
         {
             if (idx == _shownLine && line == _shownText) return;
-            _shownLine = idx; _shownText = line;
+            _shownLine = idx; _shownText = line; _shownPhonetic = u.Phonetic;
+            _melody.BaseNote = _m.LastNoteNumber;
             while (_scores.Count <= idx) _scores.Add("");
             _melody.Load(u.SylText, LineScore.Parse(_scores[idx], u.SylS.Length), _m.TicksPerBeat);
         }

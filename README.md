@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 1.4.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 1.4.4 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 The voice is original: a formant model converted to filter coefficients as it
 plays, with no speech ROM data and no code from any other synthesiser. Word
@@ -48,7 +48,16 @@ the middle row, which is the note you play.
 - Drag a block **up or down** to change its pitch (12 semitones either way).
 - Drag a block **sideways** to change the silence before it.
 - Drag a block's **right edge** to change its length.
-- **Sing line** plays the line under the caret with its melody.
+- **Sing line** plays the line under the caret with its melody, from the last
+  note played on track 1. An orange marker shows where the voice is, both for
+  Sing line and when the pattern plays that line.
+- The strip on the left names the notes for that starting note; the
+  highlighted row is the note itself, and the darker rows are sharps.
+- **Zoom −** and **Zoom +** change the size of the grid. Drag the grey bar
+  between the text and the grid to give either more room.
+- Blocks are labelled with the word, cut at its syllables (to-, -night). The
+  cut is a guess from the spelling; where it can't tell, the whole word sits on
+  the first block and the rest show a dash.
 
 In the pattern, set Play Mode to Line (or load the Line Singer preset) and put
 one note on the row where the line starts, with its Phrase number. The note
@@ -254,6 +263,27 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 `midi_to_robosing.py` beside it.
 
 ## Changes
+
+**1.4.4**
+- Dark scroll bars in the phrase editor.
+
+**1.4.3**
+- The melody grid starts at the top of its panel, and the note names line up
+  with their rows (they sat about half a row low).
+- About and Help are dark windows too.
+
+**1.4.2**
+- The phrase editor window is dark, to sit with ReBuzz: background, text box,
+  buttons, and the title bar on Windows 10 (2004) and later. Scroll bars and
+  the Help message box keep the Windows look.
+
+**1.4.1** (editor)
+- Blocks are labelled with words instead of phonemes.
+- The melody grid gets most of the window, with a draggable bar between it and
+  the text; the long instructions moved to a Help button.
+- Bigger blocks, and Zoom buttons.
+- Note names down the left edge, piano-roll shading, and a marker that follows
+  the voice while a line sings.
 
 **1.4.0** (trial of line melodies)
 - Play Mode gains **Line**: one pattern note sings a whole line from a melody

@@ -43,7 +43,10 @@ static class Smoke
             int words = Lexicon.Count;
             Console.WriteLine($"lexicon: {words} words, loaded in {sw0.ElapsedMilliseconds} ms");
             for (int i = 1; i < args.Length; i++)
-                Console.WriteLine($"{args[i],-12} {Planner.Build(args[i], SpeakMode.Speak).Phonetic.Replace(" .", "")}");
+            {
+                var uu = Planner.Build(args[i], SpeakMode.Speak);
+                Console.WriteLine($"{args[i],-12} {uu.Phonetic.Replace(" .", "")}   [{string.Join(" | ", uu.SylText)}]");
+            }
             return;
         }
         if (args.Length == 2 && args[0] == "line") { LineDemo.Run(args[1]); return; }

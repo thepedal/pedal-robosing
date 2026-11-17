@@ -260,6 +260,15 @@ namespace PedalRoboSing.Speech
             }
         }
 
+        /// <summary>For the editor's marker: ticks into the line, if this voice is singing the line with this transcription.</summary>
+        public bool TryLineProgress(string phonetic, out float ticks)
+        {
+            ticks = -1f;
+            if (!IsActive || _kind != Kind.Line || !_speaking || _u.Phonetic != phonetic) return false;
+            ticks = _lineClock / Math.Max(1f, TickMs);
+            return true;
+        }
+
         // ── Line mode: syllables on a tick grid ──────────────────────────────
         // _lineNom is where the current syllable's vowel belongs, in ms from the
         // start of the line; _lineClock is how far the line has actually got.

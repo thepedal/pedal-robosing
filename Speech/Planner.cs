@@ -774,6 +774,48 @@ namespace PedalRoboSing.Speech
             return false;
         }
 
+        // Labels for the melody editor: the word's spelling cut at its syllables (to-, -night).
+        // A guess from the letters; when the vowel groups don't match the syllable count
+        // the whole word goes on the first block and a dash on the rest.
+        static string[] SpellSyllables(string word, int n)
+        {
+            string w = word.ToLowerInvariant();
+            var res = new string[n];
+            if (n <= 1) { res[0] = w; return res; }
+            bool V(char c) => "aeiouy".IndexOf(c) >= 0;
+            var gs = new List<int>(); var ge = new List<int>();          // vowel-letter groups: start, end (exclusive)
+            for (int i = 0; i < w.Length; i++)
+            {
+                if (!V(w[i]) || (i > 0 && V(w[i - 1]))) continue;
+                int e = i; while (e < w.Length && V(w[e])) e++;
+                gs.Add(i); ge.Add(e);
+            }
+            if (gs.Count == n + 1 && w.EndsWith("e") && ge[gs.Count - 1] - gs[gs.Count - 1] == 1) { gs.RemoveAt(n); ge.RemoveAt(n); }   // silent e
+            if (gs.Count != n)
+            {
+                res[0] = w + "-";
+                for (int i = 1; i < n; i++) res[i] = "-";
+                return res;
+            }
+            int from = 0;
+            for (int k = 0; k < n; k++)
+            {
+                int cut = w.Length;
+                if (k < n - 1)
+                {
+                    int a = ge[k], b = gs[k + 1], run = b - a;           // consonant letters between two vowel groups
+                    string pair = run == 2 ? w.Substring(a, 2) : "";
+                    if (run == 0) cut = b;
+                    else if (pair == "ng" || pair == "ck") cut = b;      // these close the syllable before
+                    else if (pair == "th" || pair == "sh" || pair == "ch" || pair == "ph") cut = a;
+                    else cut = b - 1;                                    // otherwise the last consonant opens the next
+                }
+                res[k] = (k > 0 ? "-" : "") + w.Substring(from, cut - from) + (k < n - 1 ? "-" : "");
+                from = cut;
+            }
+            return res;
+        }
+
         static void BuildUnits(List<Item> items, List<Inst> insts, Utterance u)
         {
             var ss = new List<float>(); var sh = new List<float>(); var se = new List<float>(); var sw = new List<int>();
@@ -815,6 +857,7 @@ namespace PedalRoboSing.Speech
                     prevV = k;
                 }
 
+                string[] spell = items[item].Text != null ? SpellSyllables(items[item].Text, starts.Count) : null;
                 if (sb.Length > 0) sb.Append(word != lastWord ? "   " : " ");
                 lastWord = word;
                 for (int j = 0; j < starts.Count; j++)
@@ -825,7 +868,7 @@ namespace PedalRoboSing.Speech
                         if (g[k].Ph.IsVowel) { h0 = g[k].T + Math.Min(0.45f * g[k].D, 50f); v0 = g[k].T; break; }
                     lab.Clear();
                     for (int k = a; k <= b; k++) lab.Append(k > a ? " " : "").Append(g[k].Ph.Name.ToLowerInvariant());
-                    sv.Add(v0); st.Add(lab.ToString());
+                    sv.Add(v0); st.Add(spell != null ? spell[j] : lab.ToString());
                     if (h0 < 0f)
                         for (int k = a; k <= b; k++)
                             if (!g[k].Ph.IsStopLike && g[k].D > best) { best = g[k].D; h0 = g[k].T + g[k].D * 0.5f; }

@@ -37,21 +37,36 @@ namespace System.Windows
     public delegate void RoutedEventHandler(object sender, EventArgs e);
     public struct Thickness { public Thickness(double u) { } public Thickness(double l, double t, double r, double b) { } }
     public enum TextWrapping { NoWrap, Wrap }
-    public enum HorizontalAlignment { Left, Right }
-    public enum WindowStartupLocation { Manual, CenterOwner }
+    public enum HorizontalAlignment { Left, Right, Stretch }
+    public enum VerticalAlignment { Top, Center, Bottom, Stretch }
+    public enum GridUnitType { Auto, Pixel, Star }
+    public struct GridLength { public GridLength(double v, GridUnitType t) { } public static GridLength Auto => default; }
+    public enum WindowStartupLocation { Manual, CenterOwner, CenterScreen }
+    public class ResourceDictionary { public System.Collections.Generic.List<ResourceDictionary> MergedDictionaries { get; } = new System.Collections.Generic.List<ResourceDictionary>(); }
+    public enum SizeToContent { Manual, Width, Height, WidthAndHeight }
+    public enum ResizeMode { NoResize, CanMinimize, CanResize }
     public static class MessageBox { public static void Show(string text, string caption) { } }
     public class Application { public static Application Current => null; public Window MainWindow => null; }
     public struct Point { public double X, Y; }
     public struct CornerRadius { public CornerRadius(double u) { } }
-    public class FrameworkElement { public Thickness Margin { get; set; } public double MinWidth { get; set; } public double MinHeight { get; set; }
+    public class FrameworkElement { public Thickness Margin { get; set; } public double MinWidth { get; set; } public double MinHeight { get; set; } public double MaxWidth { get; set; }
         public double Width { get; set; } public double Height { get; set; } public bool IsHitTestVisible { get; set; }
-        public HorizontalAlignment HorizontalAlignment { get; set; } public event RoutedEventHandler Loaded; public bool Focus() => true;
+        public HorizontalAlignment HorizontalAlignment { get; set; } public VerticalAlignment VerticalAlignment { get; set; } public event RoutedEventHandler Loaded; public bool Focus() => true;
         public event System.Windows.Input.MouseButtonEventHandler MouseLeftButtonDown, MouseLeftButtonUp;
         public event System.Windows.Input.MouseEventHandler MouseMove;
         public bool CaptureMouse() => true; public void ReleaseMouseCapture() { } }
-    public class Window : FrameworkElement { public string Title { get; set; }
+    public class Style { }
+    public class Window : FrameworkElement { public string Title { get; set; } public System.Windows.Media.Brush Background { get; set; } public event EventHandler SourceInitialized;
         public WindowStartupLocation WindowStartupLocation { get; set; } public bool ShowInTaskbar { get; set; } public object Content { get; set; }
-        public Window Owner { get; set; } public event EventHandler Closed; public void Show() { } public bool Activate() => true; public void Close() { } }
+        public Window Owner { get; set; } public event EventHandler Closed; public void Show() { } public bool Activate() => true; public void Close() { }
+        public ResourceDictionary Resources { get; } = new ResourceDictionary();
+        public SizeToContent SizeToContent { get; set; } public ResizeMode ResizeMode { get; set; } public bool? ShowDialog() => true; }
+}
+namespace System.Windows.Markup { public static class XamlReader { public static object Parse(string xaml) => null; } }
+namespace System.Windows.Interop { public class WindowInteropHelper { public WindowInteropHelper(System.Windows.Window w) { } public IntPtr Handle => IntPtr.Zero; } }
+namespace System.Windows.Threading
+{
+    public class DispatcherTimer { public TimeSpan Interval { get; set; } public event EventHandler Tick; public void Start() { } public void Stop() { } }
 }
 namespace System.Windows.Input
 {
@@ -66,7 +81,7 @@ namespace System.Windows.Media
     public class SolidColorBrush : Brush { public SolidColorBrush(Color c) { } }
     public class FontFamily { public FontFamily(string n) { } }
     public class Brush { }
-    public static class Brushes { public static Brush DimGray => null; }
+    public static class Brushes { public static Brush DimGray => null; public static Brush Gray => null; }
 }
 namespace System.Windows.Controls
 {
@@ -76,6 +91,12 @@ namespace System.Windows.Controls
     public enum ScrollBarVisibility { Disabled, Auto }
     public class UIElementCollection { public void Add(FrameworkElement e) { } public void Clear() { } }
     public class Panel : FrameworkElement { public UIElementCollection Children { get; } = new UIElementCollection(); public Brush Background { get; set; } }
+    public class RowDefinition { public System.Windows.GridLength Height { get; set; } public double MinHeight { get; set; } }
+    public class RowDefinitionCollection { public void Add(RowDefinition r) { } }
+    public class Grid : Panel { public RowDefinitionCollection RowDefinitions { get; } = new RowDefinitionCollection(); public static void SetRow(System.Windows.FrameworkElement e, int row) { } }
+    public enum GridResizeDirection { Auto, Columns, Rows }
+    public enum GridResizeBehavior { BasedOnAlignment, CurrentAndNext, PreviousAndCurrent, PreviousAndNext }
+    public class GridSplitter : System.Windows.FrameworkElement { public GridResizeDirection ResizeDirection { get; set; } public GridResizeBehavior ResizeBehavior { get; set; } public Brush Background { get; set; } }
     public class Canvas : Panel { public static void SetLeft(FrameworkElement e, double v) { } public static void SetTop(FrameworkElement e, double v) { } }
     public class ScrollViewer : FrameworkElement { public object Content { get; set; } public ScrollBarVisibility HorizontalScrollBarVisibility { get; set; }
         public ScrollBarVisibility VerticalScrollBarVisibility { get; set; } }
@@ -85,9 +106,11 @@ namespace System.Windows.Controls
     public class StackPanel : Panel { public Orientation Orientation { get; set; } }
     public class TextBlock : FrameworkElement { public string Text { get; set; } public TextWrapping TextWrapping { get; set; } public double FontSize { get; set; }
         public FontFamily FontFamily { get; set; } public Brush Foreground { get; set; } }
-    public class Button : FrameworkElement { public object Content { get; set; } public Thickness Padding { get; set; } public event RoutedEventHandler Click; }
+    public class Button : FrameworkElement { public object Content { get; set; } public Thickness Padding { get; set; } public event RoutedEventHandler Click;
+        public Brush Background { get; set; } public Brush Foreground { get; set; } public Brush BorderBrush { get; set; } public System.Windows.Style Style { get; set; } public bool IsDefault { get; set; } public bool IsCancel { get; set; } }
     public class TextBox : FrameworkElement { public bool AcceptsReturn { get; set; } public bool AcceptsTab { get; set; } public FontFamily FontFamily { get; set; }
         public double FontSize { get; set; } public TextWrapping TextWrapping { get; set; } public ScrollBarVisibility VerticalScrollBarVisibility { get; set; }
         public ScrollBarVisibility HorizontalScrollBarVisibility { get; set; } public string Text { get; set; } public int CaretIndex { get; set; }
-        public event RoutedEventHandler SelectionChanged; public event EventHandler TextChanged; }
+        public event RoutedEventHandler SelectionChanged; public event EventHandler TextChanged;
+        public Brush Background { get; set; } public Brush Foreground { get; set; } public Brush BorderBrush { get; set; } public Brush CaretBrush { get; set; } public Brush SelectionBrush { get; set; } }
 }
