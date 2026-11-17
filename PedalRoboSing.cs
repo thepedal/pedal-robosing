@@ -30,7 +30,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "1.1.0";
+        internal const string Version = "1.2.0";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;
@@ -95,6 +95,8 @@ namespace PedalRoboSing
             }
         }
 
+        // Defaults since v1.2 are close to the Reactive Singer preset: clean chip
+        // settings, some Tune, vibrato and glide, and the React controls on.
         // ── Global parameters. DECLARATION ORDER IS THE PRESET CONTRACT ─────────
         // ── (Build §3.3): only ever append; never reorder or insert. ────────────
 
@@ -114,25 +116,25 @@ namespace PedalRoboSing
             ValueDescriptions = new[] { "Speak", "Spell", "Say+Spell" })]
         public int Mode { get; set; } = 0;
 
-        [ParameterDecl(Name = "Excitation", MinValue = 0, MaxValue = 4, DefValue = 0,
+        [ParameterDecl(Name = "Excitation", MinValue = 0, MaxValue = 4, DefValue = 1,
             ValueDescriptions = new[] { "Chirp", "Glottal", "Saw", "Square", "Whisper" })]
-        public int Excitation { get; set; } = 0;
+        public int Excitation { get; set; } = 1;
 
-        [ParameterDecl(Name = "Chip Rate", MinValue = 0, MaxValue = 6, DefValue = 2,
+        [ParameterDecl(Name = "Chip Rate", MinValue = 0, MaxValue = 6, DefValue = 5,
             ValueDescriptions = new[] { "4 kHz", "5.5 kHz", "8 kHz", "10 kHz", "12 kHz", "16 kHz", "22 kHz" })]
-        public int ChipRate { get; set; } = 2;
+        public int ChipRate { get; set; } = 5;
 
-        [ParameterDecl(Name = "Frame", Description = "Coefficient update interval in ms (longer = steppier)", MinValue = 5, MaxValue = 60, DefValue = 25)]
-        public int Frame { get; set; } = 25;
+        [ParameterDecl(Name = "Frame", Description = "Coefficient update interval in ms (longer = steppier)", MinValue = 5, MaxValue = 60, DefValue = 15)]
+        public int Frame { get; set; } = 15;
 
-        [ParameterDecl(Name = "Coef Bits", Description = "Filter coefficient resolution (11 = unquantised)", MinValue = 2, MaxValue = 11, DefValue = 6)]
-        public int CoefBits { get; set; } = 6;
+        [ParameterDecl(Name = "Coef Bits", Description = "Filter coefficient resolution (11 = unquantised)", MinValue = 2, MaxValue = 11, DefValue = 10)]
+        public int CoefBits { get; set; } = 10;
 
-        [ParameterDecl(Name = "DAC Bits", Description = "Output resolution (16 = unquantised)", MinValue = 3, MaxValue = 16, DefValue = 8)]
-        public int DacBits { get; set; } = 8;
+        [ParameterDecl(Name = "DAC Bits", Description = "Output resolution (16 = unquantised)", MinValue = 3, MaxValue = 16, DefValue = 14)]
+        public int DacBits { get; set; } = 14;
 
-        [ParameterDecl(Name = "Speaker", Description = "Small-speaker voicing and image filtering (0 = raw)", MinValue = 0, MaxValue = 127, DefValue = 64)]
-        public int Speaker { get; set; } = 64;
+        [ParameterDecl(Name = "Speaker", Description = "Small-speaker voicing and image filtering (0 = raw)", MinValue = 0, MaxValue = 127, DefValue = 30)]
+        public int Speaker { get; set; } = 30;
 
         [ParameterDecl(Name = "Note Off", MinValue = 0, MaxValue = 1, DefValue = 0,
             ValueDescriptions = new[] { "Ignore", "Cut" })]
@@ -152,8 +154,8 @@ namespace PedalRoboSing
         [ParameterDecl(Name = "Sync Step", Description = "Sync: ticks per syllable", MinValue = 1, MaxValue = 32, DefValue = 2)]
         public int SyncStep { get; set; } = 2;
 
-        [ParameterDecl(Name = "Glide", Description = "How slowly the mouth moves to a new shape", MinValue = 0, MaxValue = 127, DefValue = 0)]
-        public int Glide { get; set; } = 0;
+        [ParameterDecl(Name = "Glide", Description = "How slowly the mouth moves to a new shape", MinValue = 0, MaxValue = 127, DefValue = 15)]
+        public int Glide { get; set; } = 15;
 
         [ParameterDecl(Name = "Scan", Description = "Scrub: travel through the Word/Words window on its own (64 = still, below = backwards)", MinValue = 0, MaxValue = 127, DefValue = 64)]
         public int Scan { get; set; } = 64;
@@ -162,8 +164,8 @@ namespace PedalRoboSing
             ValueDescriptions = new[] { "Per Track", "Shared" })]
         public int Mouth { get; set; } = 0;
 
-        [ParameterDecl(Name = "Tune", Description = "Pulls the vowel resonances onto musical pitches", MinValue = 0, MaxValue = 127, DefValue = 0)]
-        public int Tune { get; set; } = 0;
+        [ParameterDecl(Name = "Tune", Description = "Pulls the vowel resonances onto musical pitches", MinValue = 0, MaxValue = 127, DefValue = 50)]
+        public int Tune { get; set; } = 50;
 
         [ParameterDecl(Name = "Tune To", MinValue = 0, MaxValue = 1, DefValue = 0,
             ValueDescriptions = new[] { "Harmonics", "Scale" })]
@@ -182,39 +184,47 @@ namespace PedalRoboSing
             ValueDescriptions = new[] { "Off", "On" })]
         public int InflectSnap { get; set; } = 0;
 
-        [ParameterDecl(Name = "Cons Tune", Description = "Pitches the consonant noise", MinValue = 0, MaxValue = 127, DefValue = 0)]
-        public int ConsTune { get; set; } = 0;
+        [ParameterDecl(Name = "Cons Tune", Description = "Pitches the consonant noise", MinValue = 0, MaxValue = 127, DefValue = 40)]
+        public int ConsTune { get; set; } = 40;
 
         [ParameterDecl(Name = "Cons Pitch", MinValue = 0, MaxValue = 4, DefValue = 2,
             ValueDescriptions = new[] { "Unison", "Fifth", "Octave", "Octave+Fifth", "2 Octaves" })]
         public int ConsPitch { get; set; } = 2;
 
-        [ParameterDecl(Name = "Vib Depth", MinValue = 0, MaxValue = 127, DefValue = 0)]
-        public int VibDepth { get; set; } = 0;
+        [ParameterDecl(Name = "Vib Depth", MinValue = 0, MaxValue = 127, DefValue = 30)]
+        public int VibDepth { get; set; } = 30;
 
         [ParameterDecl(Name = "Vib Rate", MinValue = 0, MaxValue = 127, DefValue = 64)]
         public int VibRate { get; set; } = 64;
 
-        [ParameterDecl(Name = "Portamento", MinValue = 0, MaxValue = 127, DefValue = 0)]
-        public int Portamento { get; set; } = 0;
+        [ParameterDecl(Name = "Portamento", MinValue = 0, MaxValue = 127, DefValue = 20)]
+        public int Portamento { get; set; } = 20;
 
         // ── New in v1.1 — React: the sound of each word moves the voice. Appended. ──
         // 64 = off. Above 64 works as described; below 64 does the opposite.
 
-        [ParameterDecl(Name = "React Level", Description = "Open vowels (ah) louder, closed ones (ee, oo) quieter", MinValue = 0, MaxValue = 127, DefValue = 64)]
-        public int ReactLevel { get; set; } = 64;
+        [ParameterDecl(Name = "React Level", Description = "Open vowels (ah) louder, closed ones (ee, oo) quieter", MinValue = 0, MaxValue = 127, DefValue = 95)]
+        public int ReactLevel { get; set; } = 95;
 
-        [ParameterDecl(Name = "React Tune", Description = "Open vowels get more Tune, closed ones less", MinValue = 0, MaxValue = 127, DefValue = 64)]
-        public int ReactTune { get; set; } = 64;
+        [ParameterDecl(Name = "React Tune", Description = "Open vowels get more Tune, closed ones less", MinValue = 0, MaxValue = 127, DefValue = 120)]
+        public int ReactTune { get; set; } = 120;
 
-        [ParameterDecl(Name = "React Size", Description = "Bright sounds (ee, s) shrink the mouth, dark ones (oo, m) enlarge it", MinValue = 0, MaxValue = 127, DefValue = 64)]
-        public int ReactSize { get; set; } = 64;
+        [ParameterDecl(Name = "React Size", Description = "Bright sounds (ee, s) shrink the mouth, dark ones (oo, m) enlarge it", MinValue = 0, MaxValue = 127, DefValue = 90)]
+        public int ReactSize { get; set; } = 90;
 
-        [ParameterDecl(Name = "React Ring", Description = "Hard consonants (t, k, p) ring with more pitch, soft ones (f, th) with less", MinValue = 0, MaxValue = 127, DefValue = 64)]
-        public int ReactRing { get; set; } = 64;
+        [ParameterDecl(Name = "React Ring", Description = "Hard consonants (t, k, p) ring with more pitch, soft ones (f, th) with less", MinValue = 0, MaxValue = 127, DefValue = 110)]
+        public int ReactRing { get; set; } = 110;
 
-        [ParameterDecl(Name = "React Vib", Description = "Vibrato grows on stressed vowels and drops out on consonants", MinValue = 0, MaxValue = 127, DefValue = 64)]
-        public int ReactVib { get; set; } = 64;
+        [ParameterDecl(Name = "React Vib", Description = "Vibrato grows on stressed vowels and drops out on consonants", MinValue = 0, MaxValue = 127, DefValue = 120)]
+        public int ReactVib { get; set; } = 120;
+
+        // ── New in v1.2 ───────────────────────────────────────────────────────
+
+        [ParameterDecl(Name = "React Rhyme", Description = "Rhyming syllables ring out: more tuning, level and vibrato", MinValue = 0, MaxValue = 127, DefValue = 100)]
+        public int ReactRhyme { get; set; } = 100;
+
+        [ParameterDecl(Name = "React Allit", Description = "Words that open on the same consonant hit harder and ring more", MinValue = 0, MaxValue = 127, DefValue = 100)]
+        public int ReactAllit { get; set; } = 100;
 
         // ── Track parameters (group 2) ─────────────────────────────────────────
         // From ReBuzz 1848 (PR #221) each track's setter fires on its own, so no
@@ -293,6 +303,7 @@ namespace PedalRoboSing
                 case "Portamento": return value == 0 ? "Off" : PortaMsFor(value).ToString("0") + " ms";
                 case "Position": return (value / 10f).ToString("0.0") + "%";
                 case "React Level": case "React Tune": case "React Size": case "React Ring": case "React Vib":
+                case "React Rhyme": case "React Allit":
                     return value == 64 ? "Off" : ((value - 64) * 100 / 63).ToString("+0;-0") + "%";
                 default: return null;
             }
@@ -312,7 +323,7 @@ namespace PedalRoboSing
         public void SetPhrases(IReadOnlyList<string> lines) => _bank = new PhraseBank(lines);
 
         /// <summary>Editor preview: speak arbitrary text on voice 1 at the last note played there.</summary>
-        public void Audition(string text) => _audition = Planner.Build(text ?? "", (SpeakMode)Math.Clamp(Mode, 0, 2));
+        public void Audition(string text) => _audition = Planner.Build(text ?? "", (SpeakMode)Math.Clamp(Mode, 0, 2), _bank.Rhymes);
 
         public RoboSingState MachineState
         {
@@ -442,6 +453,7 @@ namespace PedalRoboSing
                 v.ScrubTarget01 = _position[i] / 1000f;
                 v.ReactLevel = React(ReactLevel); v.ReactTune = React(ReactTune); v.ReactSize = React(ReactSize);
                 v.ReactRing = React(ReactRing); v.ReactVib = React(ReactVib);
+                v.ReactRhyme = React(ReactRhyme); v.ReactAllit = React(ReactAllit);
             }
 
             // Note events

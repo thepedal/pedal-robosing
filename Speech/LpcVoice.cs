@@ -68,11 +68,13 @@ namespace PedalRoboSing.Speech
         public float ReactSize;             // bright sounds a smaller mouth, dark a bigger one
         public float ReactRing;             // hard consonants ring more, soft ones less
         public float ReactVib;              // vibrato on sung sounds, none on consonants
+        public float ReactRhyme;            // rhyming syllables ring out: more tuning, level and vibrato
+        public float ReactAllit;            // alliterating consonants hit harder and ring more
 
         // ── Mouth state other voices may follow ──────────────────────────────
         public readonly float[] MouthF = new float[4], MouthB = new float[4];
         public float MouthAV, MouthAN, MouthSemis;
-        public float MouthOpen = 0.5f, MouthBright = 0.5f, MouthHard = 0.5f, MouthSung;
+        public FeelKey MouthFeel = FeelKey.Neutral;
         public bool MouthLive;
 
         public bool IsActive { get; private set; }
@@ -93,7 +95,7 @@ namespace PedalRoboSing.Speech
         int _phase, _sylIdx, _sylLast;
         float _scanOff, _refSemis;
         int _fi, _si, _pi, _qi;
-        float _open = 0.5f, _bright = 0.5f, _hard = 0.5f, _sung;
+        FeelKey _q = FeelKey.Neutral, _qRaw = FeelKey.Neutral;
         float _consEff, _vibMul = 1f;
         bool _speaking, _snap;
         int _tailSamples;
@@ -365,7 +367,7 @@ namespace PedalRoboSing.Speech
                 if (_fSm[0] <= 0f) { _fSm[0] = 500; _fSm[1] = 1500; _fSm[2] = 2500; _fSm[3] = 3300; }
                 av = live ? L.MouthAV : 0f; an = live ? L.MouthAN : 0f;
                 semis = L?.MouthSemis ?? 0f;
-                if (L != null) { _open = L.MouthOpen; _bright = L.MouthBright; _hard = L.MouthHard; _sung = L.MouthSung; }
+                if (L != null) _q = L.MouthFeel;
                 if (!_speaking) { av = 0; an = 0; }
             }
             else
@@ -375,7 +377,7 @@ namespace PedalRoboSing.Speech
                 u.SampleFormants(_kind == Kind.Run ? Math.Min(t, _tEnd) : t, ref _fi, _fTrack, _bTrack);
                 u.SampleSource(t, ref _si, out av, out an);
                 semis = u.SamplePitch(t, ref _pi);
-                u.SampleFeel(t, ref _qi, out float qo, out float qb, out float qh, out float qs);
+                u.SampleFeel(t, ref _qi, ref _qRaw);
 
                 if (_kind == Kind.Seg) semis -= _refSemis;
                 else if (_kind == Kind.Scrub && !InflSnap) semis = 0f;
@@ -400,18 +402,23 @@ namespace PedalRoboSing.Speech
                 }
                 _avSm += (av - _avSm) * c; _anSm += (an - _anSm) * c;
                 av = _avSm; an = _anSm;
-                _open += (qo - _open) * c; _bright += (qb - _bright) * c;
-                _hard += (qh - _hard) * c; _sung += (qs - _sung) * c;
-                MouthOpen = _open; MouthBright = _bright; MouthHard = _hard; MouthSung = _sung;
+                _q.Open += (_qRaw.Open - _q.Open) * c; _q.Bright += (_qRaw.Bright - _q.Bright) * c;
+                _q.Hard += (_qRaw.Hard - _q.Hard) * c; _q.Sung += (_qRaw.Sung - _q.Sung) * c;
+                _q.Rhyme += (_qRaw.Rhyme - _q.Rhyme) * c; _q.Allit += (_qRaw.Allit - _q.Allit) * c;
+                MouthFeel = _q;
 
                 for (int i = 0; i < 4; i++) { MouthF[i] = _fSm[i]; MouthB[i] = _bSm[i]; }
                 MouthAV = av; MouthAN = an; MouthSemis = semis; MouthLive = _speaking;
             }
 
             // React: the feel of the sound moves level, ring and vibrato here, tuning and size below
-            if (ReactLevel != 0f) av *= MathF.Pow(2f, ReactLevel * (_open - 0.5f) * 2f);          // up to ±6 dB
-            _consEff = Math.Clamp(ConsTune + ReactRing * (_hard - 0.5f), 0f, 1f);
-            _vibMul = Math.Clamp(1f + ReactVib * (_sung * 2f - 1f), 0f, 2f);
+            float lift = ReactLevel * (_q.Open - 0.5f) * 2f            // open vowels, up to ±6 dB
+                       + ReactRhyme * _q.Rhyme * 0.6f                  // rhymes, up to ±3.6 dB
+                       + ReactAllit * _q.Allit * 0.5f;                 // voiced alliterating consonants
+            if (lift != 0f) av *= MathF.Pow(2f, lift);
+            if (ReactAllit != 0f) an *= MathF.Pow(2f, ReactAllit * _q.Allit);       // their noise, up to ±6 dB
+            _consEff = Math.Clamp(ConsTune + ReactRing * (_q.Hard - 0.5f) + ReactAllit * _q.Allit * 0.4f, 0f, 1f);
+            _vibMul = Math.Clamp((1f + ReactVib * (_q.Sung * 2f - 1f)) * (1f + ReactRhyme * _q.Rhyme * 0.5f), 0f, 2.5f);
 
             if (Excitation == 4) { an += av * 0.8f; av = 0f; }
             else if (Breath > 0f) an += av * Breath * 0.4f;
@@ -426,8 +433,8 @@ namespace PedalRoboSing.Speech
 
             // Formants → poles: voice size, then tuning, dropping any above ~0.92 Nyquist
             float nyq = ChipRate * 0.5f;
-            float fs = FormantScale * MathF.Pow(2f, ReactSize * (_bright - 0.5f) * 0.5f);         // up to ±19%
-            float tune = Math.Clamp(TuneAmt + ReactTune * (_open - 0.5f), 0f, 1f);
+            float fs = FormantScale * MathF.Pow(2f, ReactSize * (_q.Bright - 0.5f) * 0.5f);       // up to ±19%
+            float tune = Math.Clamp(TuneAmt + ReactTune * (_q.Open - 0.5f) + ReactRhyme * _q.Rhyme * 0.6f, 0f, 1f);
             float prevTarget = 0f;
             int np = 0;
             for (int i = 0; i < 4; i++)

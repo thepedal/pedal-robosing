@@ -16,7 +16,10 @@ static class ReactDemo
     static PedalRoboSingMachine M(string phrase)
     {
         var h = new Host(); h.MasterInfo.SamplesPerTick = Tick;
-        var m = new PedalRoboSingMachine(h) { Excitation = 1, ChipRate = 5, Frame = 15, CoefBits = 10, DacBits = 14, Speaker = 30 };
+        // Everything the test doesn't set is pinned off, whatever the machine's defaults are
+        var m = new PedalRoboSingMachine(h) { Excitation = 1, ChipRate = 5, Frame = 15, CoefBits = 10, DacBits = 14, Speaker = 30,
+            Tune = 0, VibDepth = 0, Portamento = 0, Glide = 0, ConsTune = 0,
+            ReactLevel = 64, ReactTune = 64, ReactSize = 64, ReactRing = 64, ReactVib = 64, ReactRhyme = 64, ReactAllit = 64 };
         m.SetPhrases(new[] { phrase });
         return m;
     }
@@ -66,6 +69,23 @@ static class ReactDemo
             Console.WriteLine();
         }
 
+        // What the detector finds
+        string[] lines = { "The cat sat on the mat.", "Seven silver circuits sing.", "Big bad bots break beats.",
+                           "I make music in the night.", "Robots dancing in the light.", "Give it to me, set it free.",
+                           "A plain line with nothing special." };
+        var rh = Planner.FindRhymes(lines);
+        foreach (var l in lines) Console.WriteLine($"  {l,-34} {Planner.Build(l, SpeakMode.Speak, rh).SoundNotes}");
+
+        // Rhyme and alliteration lift, measured on the marked sounds
+        foreach (int r in new[] { 64, 127 })
+        {
+            var m = M("The cat sat on the mat."); m.PlayMode = 0; m.ReactRhyme = r;
+            m.SetNote(new Note(0x34), 0); double e1 = Play(m, 14, null);
+            var m2 = M("Big bad bots break beats."); m2.PlayMode = 0; m2.ReactAllit = r;
+            m2.SetNote(new Note(0x34), 0); double e2 = Play(m2, 14, null);
+            Console.WriteLine($"  React {r,3}: rhyme line rms {e1:0.000}   alliteration line rms {e2:0.000}");
+        }
+
         var all = new List<float>();
         string line = "Stop the cool machine, feel it sing.";
         int[] mel = { 0x34, 0x34, 0x37, 0x39, 0x3B, 0x39, 0x37, 0x34 };
@@ -80,6 +100,10 @@ static class ReactDemo
         Pass(m => { m.ReactLevel = 110; m.ReactTune = 127; m.ReactSize = 110; m.ReactRing = 127; m.ReactVib = 127; });   // 2. everything on
         Pass(m => { m.ReactTune = 127; });                                          // 3. tune only
         Pass(m => { m.ReactSize = 127; });                                          // 4. size only
+        line = "Seven silver circuits sing, the cat sat on the mat.";
+        mel = new[] { 0x34, 0x34, 0x37, 0x37, 0x39, 0x39, 0x3B, 0x39, 0x37, 0x37, 0x34, 0x34, 0x32 };
+        Pass(m => { });                                                             // 5. new line, React off
+        Pass(m => { m.ReactRhyme = 127; m.ReactAllit = 127; });                     // 6. rhyme and alliteration only
 
         float peak = 0; foreach (var s in all) peak = Math.Max(peak, Math.Abs(s));
         using var bw = new BinaryWriter(File.Create(path));

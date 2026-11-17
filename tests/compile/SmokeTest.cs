@@ -61,7 +61,7 @@ static class Smoke
         foreach (int mode in new[] { 0, 1, 2, 3, 4 })
         {
             var x = new PedalRoboSingMachine(new Host()) { PlayMode = mode, Tune = 100, TuneTo = mode % 2, Scale = 6, ConsTune = 100,
-                VibDepth = 40, Portamento = 50, ReactLevel = 127, ReactTune = 0, ReactSize = 127, ReactRing = 127, ReactVib = 127, Glide = mode * 20, InflectSnap = mode % 2, Scan = mode == 4 ? 80 : 64, Mouth = mode == 1 ? 1 : 0 };
+                VibDepth = 40, Portamento = 50, ReactLevel = 127, ReactTune = 0, ReactSize = 127, ReactRing = 127, ReactVib = 127, ReactRhyme = 127, ReactAllit = 0, Glide = mode * 20, InflectSnap = mode % 2, Scan = mode == 4 ? 80 : 64, Mouth = mode == 1 ? 1 : 0 };
             x.SetPhrase(8, 0); x.SetPhrase(8, 1);
             double e = 0;
             for (int k = 0; k < 8; k++)

@@ -29,6 +29,8 @@ GLOBALS = ["Volume", "Speed", "Voice", "Inflection", "Mode", "Excitation", "Chip
            "Coef Bits", "DAC Bits", "Speaker", "Note Off", "Breath", "Play Mode", "Hold", "Sync Step",
            "Glide", "Scan", "Mouth", "Tune", "Tune To", "Root", "Scale", "Inflect Snap", "Cons Tune",
            "Cons Pitch", "Vib Depth", "Vib Rate", "Portamento"]
+# Values of those 29 in the reference save (the v1.0 defaults).
+V1_DEFAULTS = dict(zip(GLOBALS, [100, 64, 64, 64, 0, 0, 2, 25, 6, 8, 64, 0, 0, 1, 1, 2, 0, 64, 0, 0, 0, 0, 1, 0, 0, 2, 0, 64, 0]))
 BASE = len(GLOBALS)
 NOTE, VEL, PHRASE, WORD, WORDS, STEP, POS = range(BASE, BASE + 7)
 TRACK_COLS = 7
@@ -274,7 +276,8 @@ def main():
         for p in PARTS:
             f.write("M\t%s\t%s\n" % (p.name, p.amp))
             for ph in p.phrases: f.write("P\t%s\t%s\n" % (p.name, ph))
-            for k, v in p.params.items(): f.write("G\t%s\t%d\t%d\n" % (p.name, GLOBALS.index(k), v))
+            full = dict(V1_DEFAULTS, **p.params)             # a saved song stores every value
+            for k, v in full.items(): f.write("G\t%s\t%d\t%d\n" % (p.name, GLOBALS.index(k), v))
             for (t, c), evs in p.ev.items():
                 for row, val in evs: f.write("E\t%s\t%d\t%d\t%d\t%d\n" % (p.name, row, t, c, val))
     print("wrote %s (%d machines, %d rows) and %s" % (os.path.basename(OUT), 2 + 2 * len(PARTS), LENGTH, os.path.basename(EVT)))

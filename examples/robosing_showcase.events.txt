@@ -2,16 +2,35 @@ LENGTH 384
 BASE 29
 M	Perc	0.86
 P	Perc	Stop. Tick. Kiss. Spit. Shock. Chit. Pass.
+G	Perc	0	100
+G	Perc	1	64
+G	Perc	2	64
+G	Perc	3	64
+G	Perc	4	0
 G	Perc	5	1
 G	Perc	6	5
 G	Perc	7	15
 G	Perc	8	10
 G	Perc	9	14
 G	Perc	10	20
+G	Perc	11	0
+G	Perc	12	0
 G	Perc	13	2
 G	Perc	14	0
+G	Perc	15	2
+G	Perc	16	0
+G	Perc	17	64
+G	Perc	18	0
+G	Perc	19	0
+G	Perc	20	0
+G	Perc	21	0
+G	Perc	22	1
+G	Perc	23	0
 G	Perc	24	115
 G	Perc	25	2
+G	Perc	26	0
+G	Perc	27	64
+G	Perc	28	0
 E	Perc	0	0	31	1
 E	Perc	64	0	31	1
 E	Perc	128	0	31	1
@@ -260,17 +279,35 @@ E	Perc	319	0	29	51
 E	Perc	320	0	29	255
 M	Drone	0.7
 P	Drone	Seven silver [S ER1 K AX T S] sing in the dark.
+G	Drone	0	100
+G	Drone	1	64
+G	Drone	2	64
+G	Drone	3	64
+G	Drone	4	0
 G	Drone	5	2
 G	Drone	6	5
 G	Drone	7	15
 G	Drone	8	10
 G	Drone	9	14
 G	Drone	10	30
+G	Drone	11	0
+G	Drone	12	0
+G	Drone	13	1
+G	Drone	14	1
+G	Drone	15	2
+G	Drone	16	45
+G	Drone	17	64
+G	Drone	18	0
 G	Drone	19	127
 G	Drone	20	1
 G	Drone	21	9
 G	Drone	22	7
-G	Drone	16	45
+G	Drone	23	0
+G	Drone	24	0
+G	Drone	25	2
+G	Drone	26	0
+G	Drone	27	64
+G	Drone	28	0
 E	Drone	64	0	31	1
 E	Drone	192	0	31	1
 E	Drone	320	0	31	1
@@ -357,16 +394,35 @@ E	Drone	380	0	29	255
 M	Lead	0.51
 P	Lead	I am a robot, I make strange music.
 P	Lead	Sing with me in harmony tonight.
+G	Lead	0	100
+G	Lead	1	64
+G	Lead	2	64
+G	Lead	3	64
+G	Lead	4	0
 G	Lead	5	1
 G	Lead	6	5
 G	Lead	7	15
 G	Lead	8	10
 G	Lead	9	14
 G	Lead	10	30
-G	Lead	19	105
-G	Lead	26	25
-G	Lead	28	20
+G	Lead	11	0
+G	Lead	12	0
+G	Lead	13	1
+G	Lead	14	1
+G	Lead	15	2
 G	Lead	16	15
+G	Lead	17	64
+G	Lead	18	0
+G	Lead	19	105
+G	Lead	20	0
+G	Lead	21	0
+G	Lead	22	1
+G	Lead	23	0
+G	Lead	24	0
+G	Lead	25	2
+G	Lead	26	25
+G	Lead	27	64
+G	Lead	28	20
 E	Lead	128	0	31	1
 E	Lead	160	0	31	2
 E	Lead	192	0	31	1
@@ -444,18 +500,35 @@ E	Lead	308	0	29	74
 E	Lead	317	0	29	255
 M	Choir	0.29
 P	Choir	We are the voices in the machine.
+G	Choir	0	100
+G	Choir	1	64
+G	Choir	2	64
+G	Choir	3	0
+G	Choir	4	0
 G	Choir	5	2
 G	Choir	6	5
 G	Choir	7	15
 G	Choir	8	10
 G	Choir	9	14
 G	Choir	10	30
+G	Choir	11	0
+G	Choir	12	0
 G	Choir	13	3
+G	Choir	14	1
 G	Choir	15	1
-G	Choir	18	1
-G	Choir	3	0
-G	Choir	19	50
 G	Choir	16	15
+G	Choir	17	64
+G	Choir	18	1
+G	Choir	19	50
+G	Choir	20	0
+G	Choir	21	0
+G	Choir	22	1
+G	Choir	23	0
+G	Choir	24	0
+G	Choir	25	2
+G	Choir	26	0
+G	Choir	27	64
+G	Choir	28	0
 E	Choir	192	0	29	58
 E	Choir	208	0	29	58
 E	Choir	224	0	29	56
@@ -498,16 +571,35 @@ E	Choir	304	2	29	67
 E	Choir	316	2	29	255
 M	Scrub	0.33
 P	Scrub	Good [B AY1] from the machine.
+G	Scrub	0	100
+G	Scrub	1	64
+G	Scrub	2	64
+G	Scrub	3	64
+G	Scrub	4	0
 G	Scrub	5	1
 G	Scrub	6	5
 G	Scrub	7	15
 G	Scrub	8	10
 G	Scrub	9	14
 G	Scrub	10	30
-G	Scrub	13	4
-G	Scrub	16	60
-G	Scrub	19	80
+G	Scrub	11	0
 G	Scrub	12	25
+G	Scrub	13	4
+G	Scrub	14	1
+G	Scrub	15	2
+G	Scrub	16	60
+G	Scrub	17	64
+G	Scrub	18	0
+G	Scrub	19	80
+G	Scrub	20	0
+G	Scrub	21	0
+G	Scrub	22	1
+G	Scrub	23	0
+G	Scrub	24	0
+G	Scrub	25	2
+G	Scrub	26	0
+G	Scrub	27	64
+G	Scrub	28	0
 E	Scrub	320	0	29	58
 E	Scrub	380	0	29	255
 E	Scrub	320	1	29	69

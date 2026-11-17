@@ -47,6 +47,10 @@ namespace PedalRoboSing.Speech
             public float PauseAfter;
             public char Boundary;      // '\0', ',', '.', '?', '!'
             public int Word;
+            public string Text;        // the spoken word, null for letters and [phonemes]
+            public int RimeFrom = -1;  // index of the vowel the word's rhyme starts on
+            public bool Rhymes;
+            public int AllitLen;       // leading consonants that alliterate with a neighbour
         }
 
         sealed class Inst
@@ -54,11 +58,27 @@ namespace PedalRoboSing.Speech
             public Phoneme Ph;
             public float T, D;
             public bool Stress, AccentVowel, NoAsp;
-            public int Item;
+            public int Item, Idx;
         }
 
         // ── Public entry point ───────────────────────────────────────────────
-        public static Utterance Build(string text, SpeakMode mode)
+        public static Utterance Build(string text, SpeakMode mode, ISet<string> rhymes = null)
+        {
+            var items = MakeItems(text, mode, out int wordCount);
+            if (items.Count == 0) return Utterance.Empty;
+            var u = new Utterance();
+            if (mode == SpeakMode.Speak) MarkSound(items, rhymes, u);
+
+            var insts = Time(items);
+            BuildPitch(items, insts, u);
+            BuildSpectral(insts, u);
+            BuildWords(items, insts, wordCount, u);
+            BuildUnits(items, insts, u);
+            BuildFeel(items, insts, u);
+            return u;
+        }
+
+        static List<Item> MakeItems(string text, SpeakMode mode, out int wordCount)
         {
             var toks = Tokenize(text ?? "");
             var items = new List<Item>();
@@ -96,19 +116,97 @@ namespace PedalRoboSing.Speech
                     AddSpelled(t, w, items, scratch);
             }
 
-            if (items.Count == 0) return Utterance.Empty;
+            wordCount = wordIdx;
+            if (items.Count == 0) return items;
             var fin = items[items.Count - 1];
             if (fin.Boundary == '\0' || fin.Boundary == ',') { fin.Boundary = '.'; }
             fin.PauseAfter = 0;
+            return items;
+        }
 
-            var insts = Time(items);
-            var u = new Utterance();
-            BuildPitch(items, insts, u);
-            BuildSpectral(insts, u);
-            BuildWords(items, insts, wordIdx, u);
-            BuildUnits(items, insts, u);
-            BuildFeel(insts, u);
-            return u;
+        // ── Rhyme and alliteration ───────────────────────────────────────────
+        // A word's rime runs from its last stressed vowel to its end. Two different
+        // words with the same rime rhyme, wherever they are in the phrase list.
+        static string Rime(Item it)
+        {
+            if (it.Text == null) return null;
+            if (!it.Accent && it.Boundary == '\0') return null;   // filler words only rhyme at the end of a line or clause
+            int from = -1;
+            for (int i = it.Ph.Count - 1; i >= 0; i--) if (it.Stress[i]) { from = i; break; }
+            if (from < 0) for (int i = it.Ph.Count - 1; i >= 0; i--) if (it.Ph[i].IsVowel) { from = i; break; }
+            if (from < 0) return null;
+            it.RimeFrom = from;
+            var sb = new StringBuilder();
+            for (int i = from; i < it.Ph.Count; i++) sb.Append(it.Ph[i].Name).Append(' ');
+            string key = sb.ToString();
+            return key == "AX " ? null : key;               // a bare schwa rhymes with nothing
+        }
+
+        /// <summary>Rimes shared by at least two different words across all the given lines.</summary>
+        public static HashSet<string> FindRhymes(IEnumerable<string> texts)
+        {
+            var words = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+            foreach (var text in texts)
+            {
+                List<Item> items;
+                try { items = MakeItems(text, SpeakMode.Speak, out _); } catch { continue; }
+                foreach (var it in items)
+                {
+                    string key = Rime(it);
+                    if (key == null) continue;
+                    if (!words.TryGetValue(key, out var set)) words[key] = set = new HashSet<string>(StringComparer.Ordinal);
+                    set.Add(it.Text);
+                }
+            }
+            var rhymes = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var kv in words) if (kv.Value.Count >= 2) rhymes.Add(kv.Key);
+            return rhymes;
+        }
+
+        static void MarkSound(List<Item> items, ISet<string> rhymes, Utterance u)
+        {
+            // Rhyme: against the whole phrase list if given, else within this line
+            var keys = new string[items.Count];
+            for (int i = 0; i < items.Count; i++) keys[i] = Rime(items[i]);
+            var rhymed = new List<string>();
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (keys[i] == null) continue;
+                bool hit = rhymes != null && rhymes.Contains(keys[i]);
+                if (rhymes == null)
+                    for (int j = 0; j < items.Count && !hit; j++)
+                        hit = j != i && keys[j] == keys[i] && items[j].Text != items[i].Text;
+                if (!hit) continue;
+                items[i].Rhymes = true;
+                if (!rhymed.Contains(items[i].Text)) rhymed.Add(items[i].Text);
+            }
+
+            // Alliteration: content words close together that open on the same consonant
+            var allit = new List<string>();
+            var cand = new List<int>();
+            for (int i = 0; i < items.Count; i++)
+            {
+                var it = items[i];
+                if (it.Text == null || !it.Accent || it.Ph.Count == 0 || it.Ph[0].IsVowel || it.Ph[0].Kind == PKind.Pause) continue;
+                for (int c = cand.Count - 1; c >= 0 && c >= cand.Count - 2; c--)
+                {
+                    var other = items[cand[c]];
+                    if (i - cand[c] > 4 || other.Ph[0] != it.Ph[0]) continue;
+                    foreach (var w in new[] { other, it })
+                    {
+                        int n = 0;
+                        while (n < w.Ph.Count && !w.Ph[n].IsVowel) n++;
+                        w.AllitLen = n;
+                        if (!allit.Contains(w.Text)) allit.Add(w.Text);
+                    }
+                }
+                cand.Add(i);
+            }
+
+            var sb = new StringBuilder();
+            if (rhymed.Count > 0) sb.Append("rhymes: ").Append(string.Join(", ", rhymed).ToLowerInvariant());
+            if (allit.Count > 0) sb.Append(sb.Length > 0 ? "   " : "").Append("alliteration: ").Append(string.Join(", ", allit).ToLowerInvariant());
+            u.SoundNotes = sb.ToString();
         }
 
         // ── Tokenizer ────────────────────────────────────────────────────────
@@ -190,7 +288,7 @@ namespace PedalRoboSing.Speech
         static Item WordItem(string w, int wordIdx, List<string> scratch)
         {
             bool content = !FunctionWords.Contains(w);
-            var it = new Item { Word = wordIdx, Accent = content, PauseAfter = WordGap };
+            var it = new Item { Word = wordIdx, Accent = content, PauseAfter = WordGap, Text = w };
             if (LetterToSound.Exceptions.TryGetValue(w, out var spec)) { ParseTokens(spec, it, content); return it; }
             string letters = w.Replace("'", "");
             if (letters.Length == 1) { ParseTokens(LetterToSound.LetterNames[letters[0] - 'A'], it); return it; }
@@ -264,7 +362,7 @@ namespace PedalRoboSing.Speech
                 for (int i = 0; i < it.Ph.Count; i++)
                 {
                     var ph = it.Ph[i];
-                    var x = new Inst { Ph = ph, Stress = it.Stress[i], Item = ii };
+                    var x = new Inst { Ph = ph, Stress = it.Stress[i], Item = ii, Idx = i };
                     float d = ph.Dur;
 
                     if (ph.Kind == PKind.Pause) d = 120f;
@@ -568,7 +666,7 @@ namespace PedalRoboSing.Speech
         // ── How each sound feels (drives the React controls) ─────────────────
         static float Unit(float x, float lo, float hi) => Math.Clamp((x - lo) / (hi - lo), 0f, 1f);
 
-        static void BuildFeel(List<Inst> insts, Utterance u)
+        static void BuildFeel(List<Item> items, List<Inst> insts, Utterance u)
         {
             var keys = new List<FeelKey>();
             foreach (var x in insts)
@@ -576,6 +674,9 @@ namespace PedalRoboSing.Speech
                 var ph = x.Ph;
                 if (ph.Kind == PKind.Pause) continue;
                 var k = new FeelKey { T = x.T + x.D * 0.5f, Open = 0.5f, Bright = 0.5f, Hard = 0.5f, Sung = 0f };
+                var it = items[x.Item];
+                if (it.Rhymes && x.Idx >= it.RimeFrom) k.Rhyme = 1f;
+                if (x.Idx < it.AllitLen) k.Allit = 1f;
                 switch (ph.Kind)
                 {
                     case PKind.Vowel:

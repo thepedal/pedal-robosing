@@ -22,6 +22,7 @@ namespace PedalRoboSing
         readonly PedalRoboSingMachine _m;
         readonly TextBox _box;
         readonly TextBlock _preview;
+        HashSet<string> _rhymes;
 
         const string Help =
             "One phrase per line: line 1 is Phrase 1, line 2 is Phrase 2, and so on (up to 100).\n" +
@@ -72,7 +73,7 @@ namespace PedalRoboSing
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 6, 0, 0),
                 Foreground = Brushes.DimGray,
-                MinHeight = 32,
+                MinHeight = 48,
             };
             DockPanel.SetDock(_preview, Dock.Bottom);
             root.Children.Add(_preview);
@@ -89,7 +90,7 @@ namespace PedalRoboSing
                 Text = string.Join(Environment.NewLine, machine.GetPhrases()),
             };
             _box.SelectionChanged += (s, e) => UpdatePreview();
-            _box.TextChanged += (s, e) => UpdatePreview();
+            _box.TextChanged += (s, e) => { _rhymes = null; UpdatePreview(); };
             root.Children.Add(_box);                   // last child fills the remaining space
 
             Content = root;
@@ -133,8 +134,10 @@ namespace PedalRoboSing
                     _preview.Text = $"Line {idx + 1}: beyond the {PhraseBank.MaxPhrases}-phrase limit, ignored.";
                     return;
                 }
-                var u = Planner.Build(line, SpeakMode.Speak);
+                _rhymes ??= Planner.FindRhymes(Lines());        // against every line in the box
+                var u = Planner.Build(line, SpeakMode.Speak, _rhymes);
                 _preview.Text = $"Phrase {idx + 1}: " + (u.Phonetic.Length > 0 ? u.Phonetic : "(silent)")
+                              + (u.SoundNotes.Length > 0 ? "\n" + u.SoundNotes : "")
                               + (u.WordCount > 0 ? $"    [{u.WordCount} words, {u.SylS.Length} syllables, {u.PhS.Length} phonemes, {u.Length / 1000f:0.0} s]" : "");
             }
             catch (Exception ex)

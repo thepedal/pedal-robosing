@@ -23,8 +23,13 @@ namespace PedalRoboSing.Speech
     public struct SourceKey { public float T, AV, AN; }
 
     /// <summary>How a sound feels, each 0..1 with 0.5 neutral: open (ah) vs closed (ee, oo), bright (ee, s)
-    /// vs dark (oo, m), hard (t, k) vs soft (f, vowels), and sung (stressed vowel) vs unsung (consonant).</summary>
-    public struct FeelKey { public float T, Open, Bright, Hard, Sung; }
+    /// vs dark (oo, m), hard (t, k) vs soft (f, vowels), and sung (stressed vowel) vs unsung (consonant).
+    /// Rhyme and Allit are 0 or 1: the sound is part of a rhyme, or of an alliterating word's opening.</summary>
+    public struct FeelKey
+    {
+        public float T, Open, Bright, Hard, Sung, Rhyme, Allit;
+        public static FeelKey Neutral => new FeelKey { Open = 0.5f, Bright = 0.5f, Hard = 0.5f };
+    }
     public struct PitchKey  { public float T, Semis; }
 
     public sealed class Utterance
@@ -37,6 +42,7 @@ namespace PedalRoboSing.Speech
         public float[] WordEnd   = Array.Empty<float>();
         public float Length;
         public string Phonetic = "";            // ARPAbet transcription, for the editor's preview
+        public string SoundNotes = "";          // rhymes and alliteration found, for the editor's preview
 
         // Step units: syllables and phonemes, each with a start, a hold point (where
         // a sustained note freezes the mouth) and an end, plus the word it belongs to.
@@ -99,19 +105,20 @@ namespace PedalRoboSing.Speech
             an = a.AN + (c.AN - a.AN) * x;
         }
 
-        public void SampleFeel(float t, ref int idx, out float open, out float bright, out float hard, out float sung)
+        public void SampleFeel(float t, ref int idx, ref FeelKey q)
         {
             var k = Q;
-            if (k.Length == 0) { open = bright = hard = sung = 0.5f; return; }
+            if (k.Length == 0) { q = FeelKey.Neutral; return; }
             if (idx < 0 || idx >= k.Length || k[idx].T > t) idx = 0;
             while (idx + 1 < k.Length && k[idx + 1].T <= t) idx++;
             ref FeelKey a = ref k[idx];
-            if (idx + 1 >= k.Length || t <= a.T) { open = a.Open; bright = a.Bright; hard = a.Hard; sung = a.Sung; return; }
+            if (idx + 1 >= k.Length || t <= a.T) { q = a; return; }
             ref FeelKey c = ref k[idx + 1];
             float span = c.T - a.T;
             float x = span > 1e-4f ? (t - a.T) / span : 1f;
-            open = a.Open + (c.Open - a.Open) * x; bright = a.Bright + (c.Bright - a.Bright) * x;
-            hard = a.Hard + (c.Hard - a.Hard) * x; sung = a.Sung + (c.Sung - a.Sung) * x;
+            q.Open = a.Open + (c.Open - a.Open) * x; q.Bright = a.Bright + (c.Bright - a.Bright) * x;
+            q.Hard = a.Hard + (c.Hard - a.Hard) * x; q.Sung = a.Sung + (c.Sung - a.Sung) * x;
+            q.Rhyme = a.Rhyme + (c.Rhyme - a.Rhyme) * x; q.Allit = a.Allit + (c.Allit - a.Allit) * x;
         }
 
         public float SamplePitch(float t, ref int idx)

@@ -40,6 +40,9 @@ namespace PedalRoboSing
         public readonly string[] Texts;
         readonly Utterance[][] _byMode;       // [mode][phrase]
 
+        /// <summary>Rimes shared by different words anywhere in the list.</summary>
+        public readonly HashSet<string> Rhymes;
+
         public int Count => Texts.Length;
 
         public PhraseBank(IReadOnlyList<string> texts)
@@ -47,13 +50,14 @@ namespace PedalRoboSing
             int n = Math.Min(texts?.Count ?? 0, MaxPhrases);
             Texts = new string[n];
             for (int i = 0; i < n; i++) Texts[i] = texts[i] ?? "";
+            Rhymes = Planner.FindRhymes(Texts);
             _byMode = new Utterance[3][];
             for (int m = 0; m < 3; m++)
             {
                 _byMode[m] = new Utterance[n];
                 for (int i = 0; i < n; i++)
                 {
-                    try { _byMode[m][i] = Planner.Build(Texts[i], (SpeakMode)m); }
+                    try { _byMode[m][i] = Planner.Build(Texts[i], (SpeakMode)m, Rhymes); }
                     catch { _byMode[m][i] = Utterance.Empty; }   // a bad line must never take the machine down
                 }
             }

@@ -15,13 +15,21 @@ OUT = os.path.join(HERE, MACHINE + ".prs.xml")
 # Declaration order of the global parameters (the preset contract), with defaults.
 GLOBALS = [
     ("Volume", 100), ("Speed", 64), ("Voice", 64), ("Inflection", 64), ("Mode", 0),
-    ("Excitation", 0), ("Chip Rate", 2), ("Frame", 25), ("Coef Bits", 6), ("DAC Bits", 8),
-    ("Speaker", 64), ("Note Off", 0), ("Breath", 0),
-    ("Play Mode", 1), ("Hold", 1), ("Sync Step", 2), ("Glide", 0), ("Scan", 64), ("Mouth", 0),
-    ("Tune", 0), ("Tune To", 0), ("Root", 0), ("Scale", 1), ("Inflect Snap", 0),
-    ("Cons Tune", 0), ("Cons Pitch", 2), ("Vib Depth", 0), ("Vib Rate", 64), ("Portamento", 0),
-    ("React Level", 64), ("React Tune", 64), ("React Size", 64), ("React Ring", 64), ("React Vib", 64),
+    ("Excitation", 1), ("Chip Rate", 5), ("Frame", 15), ("Coef Bits", 10), ("DAC Bits", 14),
+    ("Speaker", 30), ("Note Off", 0), ("Breath", 0),
+    ("Play Mode", 1), ("Hold", 1), ("Sync Step", 2), ("Glide", 15), ("Scan", 64), ("Mouth", 0),
+    ("Tune", 50), ("Tune To", 0), ("Root", 0), ("Scale", 1), ("Inflect Snap", 0),
+    ("Cons Tune", 40), ("Cons Pitch", 2), ("Vib Depth", 30), ("Vib Rate", 64), ("Portamento", 20),
+    ("React Level", 95), ("React Tune", 120), ("React Size", 90), ("React Ring", 110), ("React Vib", 120),
+    ("React Rhyme", 100), ("React Allit", 100),
 ]
+
+# The machine's defaults changed in v1.2. Presets are written against this plain
+# baseline (the v1.0 defaults, every React control off) so they don't move with them.
+PLAIN = {"Excitation": 0, "Chip Rate": 2, "Frame": 25, "Coef Bits": 6, "DAC Bits": 8, "Speaker": 64,
+         "Glide": 0, "Tune": 0, "Cons Tune": 0, "Vib Depth": 0, "Portamento": 0,
+         "React Level": 64, "React Tune": 64, "React Size": 64, "React Ring": 64, "React Vib": 64,
+         "React Rhyme": 64, "React Allit": 64}
 
 CLEAN = {"Excitation": 1, "Chip Rate": 5, "Frame": 15, "Coef Bits": 10, "DAC Bits": 14, "Speaker": 30}
 
@@ -43,11 +51,17 @@ PRESETS = {
     "15 Giant Drone":        dict(CLEAN, **{"Voice": 15, "Glide": 100, "Tune": 100, "Tune To": 1, "Scale": 13, "Excitation": 2}),
     "16 Tiny Robot":         {"Voice": 110, "Chip Rate": 3, "Tune": 70, "Excitation": 3, "Inflection": 0},
     "17 Reactive Singer":    dict(CLEAN, **{"Tune": 50, "Vib Depth": 30, "Portamento": 20, "Glide": 15, "Cons Tune": 40,
-                                    "React Level": 95, "React Tune": 120, "React Size": 90, "React Ring": 110, "React Vib": 120}),
+                                    "React Level": 95, "React Tune": 120, "React Size": 90, "React Ring": 110, "React Vib": 120,
+                                    "React Rhyme": 100, "React Allit": 100}),
     "18 Open Vowels Ring":   dict(CLEAN, **{"Tune": 55, "React Tune": 127, "Glide": 25}),
     "19 Rubber Mouth":       dict(CLEAN, **{"React Size": 127, "Glide": 30, "Tune": 40}),
     "20 Hard Edges":         dict(CLEAN, **{"Play Mode": 2, "Hold": 0, "Cons Tune": 60, "React Ring": 127, "React Level": 100}),
+    "21 Rhyme Spotlight":    dict(CLEAN, **{"Tune": 30, "Vib Depth": 25, "React Rhyme": 127, "Glide": 15}),
+    "22 Tongue Twister":     dict(CLEAN, **{"Cons Tune": 50, "React Allit": 127, "React Ring": 100}),
 }
+
+PRESETS_FULL = {k: dict(PLAIN, **v) for k, v in PRESETS.items()}
+
 
 def parse_source():
     """Global [ParameterDecl]s on properties, in order: (name, min, max, default)."""
@@ -72,7 +86,7 @@ def check():
     for name, d in GLOBALS:
         if name in rng and rng[name][3] != d:
             print("default mismatch for %s: source %d, script %d" % (name, rng[name][3], d)); ok = False
-    for pname, ov in PRESETS.items():
+    for pname, ov in PRESETS_FULL.items():
         for k, v in ov.items():
             if k not in rng: print("%s: unknown parameter %s" % (pname, k)); ok = False; continue
             lo, hi = rng[k][1], rng[k][2]
@@ -88,7 +102,7 @@ def build():
         lines.append("      <Parameters>")
         for idx, (name, d) in enumerate(GLOBALS):
             lines.append('        <Parameter Name=%s Group="1" Index="%d" Track="0" Value="%d" />'
-                         % (quoteattr(name), idx, ov.get(name, d)))
+                         % (quoteattr(name), idx, PRESETS_FULL[pname].get(name, d)))
         lines.append("      </Parameters>")
         lines.append("      <Attributes />")
         lines.append("      <Comment></Comment>")

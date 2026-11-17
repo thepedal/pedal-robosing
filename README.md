@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 1.1.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 1.2.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 Everything is original: English letter-to-sound rules and a formant model,
 converted to filter coefficients as it plays. No speech ROM data and no code
@@ -49,11 +49,11 @@ friends is passed through a comb tuned to the note (or a fifth, an octave, and
 so on above it), which rings on briefly after the consonant. Phoneme mode with
 Hold off turns a line of text into tuned percussion.
 
-**The sound of the words moves the voice** (the five React controls, v1.1):
+**The sound of the words moves the voice** (the React controls):
 the machine rates every sound it is about to make as open or closed, bright or
 dark, hard or soft, sung or unsung, and each React control lets one of those
-move one thing. All are off at 64; above 64 works as described and below 64
-does the opposite.
+move one thing. 64 is off; above 64 works as described and below 64 does the
+opposite. A new machine starts with them on.
 
 | Control | Listens to | Moves |
 |---|---|---|
@@ -62,6 +62,16 @@ does the opposite.
 | React Size | bright sounds (ee, s) against dark ones (oo, m) | the mouth size, exaggerating each vowel's colour |
 | React Ring | hard consonants (t, k, p) against soft ones (f, th) | the pitched-consonant amount |
 | React Vib | stressed vowels against consonants | vibrato depth (needs Vib Depth above 0) |
+| React Rhyme | syllables that rhyme with another word anywhere in the phrase list | more Tune, level and vibrato on the rhyme, so it rings out |
+| React Allit | nearby words that open on the same consonant | those consonants hit harder and ring more |
+
+Rhymes are found across the whole phrase list, so the ends of two different
+lines can rhyme. A word's rhyme runs from its last stressed vowel to its end;
+filler words (the, of, to) only count at the end of a line or clause. The
+phrase editor lists the rhymes and alliteration it found on the line under the
+caret. Detection works on the machine's own pronunciation, so a word it
+mispronounces can miss a rhyme; fix the word with brackets and the bracketed
+version stops taking part.
 
 Glide smooths these along with the mouth, and a shared mouth passes them to the
 tracks that follow it.
@@ -90,31 +100,31 @@ track 1's mouth and only supply pitch, so a chord speaks as one voice.
 | Voice | 0–127 | 64 | Vocal tract size (formants x0.66 to x1.51). |
 | Inflection | 0–127 | 64 | Pitch movement from the phrase's intonation. In Syllable/Phoneme modes it is measured from the held vowel, so the held note is always in tune. Ignored in Scrub unless Inflect Snap is on. |
 | Mode | Speak / Spell / Say+Spell | Speak | Spell turns each word into its letter names. |
-| Excitation | Chirp / Glottal / Saw / Square / Whisper | Chirp | The voice source. |
-| Chip Rate | 4–22 kHz | 8 kHz | Internal sample rate. |
-| Frame | 5–60 ms | 25 | How often the filter is updated. |
-| Coef Bits | 2–11 | 6 | Filter coefficient resolution. 11 is off. |
-| DAC Bits | 3–16 | 8 | Output resolution. 16 is off. |
-| Speaker | 0–127 | 64 | Small-speaker voicing and image filtering. 0 is raw. |
+| Excitation | Chirp / Glottal / Saw / Square / Whisper | Glottal | The voice source. |
+| Chip Rate | 4–22 kHz | 16 kHz | Internal sample rate. |
+| Frame | 5–60 ms | 15 | How often the filter is updated. |
+| Coef Bits | 2–11 | 10 | Filter coefficient resolution. 11 is off. |
+| DAC Bits | 3–16 | 14 | Output resolution. 16 is off. |
+| Speaker | 0–127 | 30 | Small-speaker voicing and image filtering. 0 is raw. |
 | Note Off | Ignore / Cut | Ignore | Cut makes note-off a fast fade in every mode. With Ignore, note-off still releases a held syllable (it finishes its consonants) and stops Scrub and shared-mouth voices. |
 | Breath | 0–127 | 0 | Adds noise to voiced sounds. |
 | Play Mode | see above | Syllable | |
 | Hold | Off / On | On | Syllable/Phoneme: sustain while the note is held. Off plays each step once at its natural length. |
 | Sync Step | 1–32 ticks | 2 | Sync: ticks per syllable. |
-| Glide | 0–127 | 0 | How slowly the mouth moves to a new shape (off, or 2 ms to 1 s). |
+| Glide | 0–127 | 15 | How slowly the mouth moves to a new shape (off, or 2 ms to 1 s). |
 | Scan | 0–127 | 64 | Scrub: automatic travel, -2x to +2x speaking pace. 64 is still. |
 | Mouth | Per Track / Shared | Per Track | |
-| Tune | 0–127 | 0 | Resonance tuning amount. |
+| Tune | 0–127 | 50 | Resonance tuning amount. |
 | Tune To | Harmonics / Scale | Harmonics | |
 | Root | C–B | C | For Scale tuning and Inflect Snap. |
 | Scale | 15 choices | Major | Chromatic, Major, Minor, Dorian, Mixolydian, Harmonic Minor, Major and Minor Pentatonic, Whole Tone, Major and Minor Triad, Major 7, Minor 7, Fifths, Octaves. |
 | Inflect Snap | Off / On | Off | Quantises the pitch movement to the scale, so spoken intonation becomes a melody (try Phrase mode with Inflection high). |
-| Cons Tune | 0–127 | 0 | Pitched-consonant amount. |
+| Cons Tune | 0–127 | 40 | Pitched-consonant amount. |
 | Cons Pitch | Unison / Fifth / Octave / Octave+Fifth / 2 Octaves | Octave | |
-| Vib Depth | 0–127 | 0 | Up to ±1 semitone, fading in after the attack. |
+| Vib Depth | 0–127 | 30 | Up to ±1 semitone, fading in after the attack. |
 | Vib Rate | 0–127 | 64 | 2 to 10 Hz. |
-| Portamento | 0–127 | 0 | Pitch glide time (off, or 5 ms to 1 s). |
-| React Level, Tune, Size, Ring, Vib | 0–127 | 64 (off) | See above. |
+| Portamento | 0–127 | 20 | Pitch glide time (off, or 5 ms to 1 s). |
+| React Level, Tune, Size, Ring, Vib, Rhyme, Allit | 0–127 | on | See above. Defaults 95, 120, 90, 110, 120, 100, 100. |
 
 ## Writing phrases
 
@@ -137,7 +147,7 @@ track 1's mouth and only supply pitch, so a chord speaks as one voice.
 Scale Bells, Chant in Time, Choir One Mouth, Tuned Percussion, Scrub Pad,
 Backwards Loop, Speech Melody, Whisper Hiss, Chip Talker, Chip Syllables,
 Spelling Bee, Broken Batteries, Giant Drone, Tiny Robot, Reactive Singer, Open
-Vowels Ring, Rubber Mouth and Hard Edges. They set the globals
+Vowels Ring, Rubber Mouth, Hard Edges, Rhyme Spotlight and Tongue Twister. They set the globals
 only. `gen_presets.py --check` verifies the bundle against the source.
 
 ## How it works
@@ -211,6 +221,19 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 `midi_to_robosing.py` beside it.
 
 ## Changes
+
+**1.2.0**
+- React Rhyme and React Allit: rhyming syllables and alliterating consonants
+  are detected and brought out. Two presets use them alone.
+- New defaults, close to the Reactive Singer preset: clean chip settings
+  (Glottal, 16 kHz, 15 ms frame, 10 coefficient bits, 14 DAC bits, Speaker 30),
+  Tune 50, Cons Tune 40, Vib Depth 30, Portamento 20, Glide 15 and the React
+  controls on. For the old starting sound, load the Chip Syllables preset.
+- A song saved with 1.0 has no React values, so it picks up the new React
+  defaults when opened and will sound different. Set the seven React controls
+  to 64 to get the old behaviour. Songs saved with 1.1 keep their values for
+  the first five and pick up Rhyme and Allit. Everything else is stored in the
+  song and does not change.
 
 **1.1.0**
 - Five React controls: the sound of each word moves level, tuning, mouth size,

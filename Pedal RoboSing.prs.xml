@@ -37,6 +37,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -79,6 +81,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -121,6 +125,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -163,6 +169,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -205,6 +213,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -247,6 +257,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -289,6 +301,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -331,6 +345,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -373,6 +389,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -415,6 +433,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -457,6 +477,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -499,6 +521,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -541,6 +565,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -583,6 +609,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -625,6 +653,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -667,6 +697,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -709,6 +741,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="90" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="110" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="120" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="100" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="100" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -751,6 +785,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -793,6 +829,8 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="127" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
@@ -835,6 +873,96 @@
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
         <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="127" />
         <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
+      </Parameters>
+      <Attributes />
+      <Comment></Comment>
+    </Preset>
+  </Item>
+  <Item Key="21 Rhyme Spotlight">
+    <Preset Machine="Pedal RoboSing">
+      <Parameters>
+        <Parameter Name="Volume" Group="1" Index="0" Track="0" Value="100" />
+        <Parameter Name="Speed" Group="1" Index="1" Track="0" Value="64" />
+        <Parameter Name="Voice" Group="1" Index="2" Track="0" Value="64" />
+        <Parameter Name="Inflection" Group="1" Index="3" Track="0" Value="64" />
+        <Parameter Name="Mode" Group="1" Index="4" Track="0" Value="0" />
+        <Parameter Name="Excitation" Group="1" Index="5" Track="0" Value="1" />
+        <Parameter Name="Chip Rate" Group="1" Index="6" Track="0" Value="5" />
+        <Parameter Name="Frame" Group="1" Index="7" Track="0" Value="15" />
+        <Parameter Name="Coef Bits" Group="1" Index="8" Track="0" Value="10" />
+        <Parameter Name="DAC Bits" Group="1" Index="9" Track="0" Value="14" />
+        <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
+        <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
+        <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
+        <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
+        <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="15" />
+        <Parameter Name="Scan" Group="1" Index="17" Track="0" Value="64" />
+        <Parameter Name="Mouth" Group="1" Index="18" Track="0" Value="0" />
+        <Parameter Name="Tune" Group="1" Index="19" Track="0" Value="30" />
+        <Parameter Name="Tune To" Group="1" Index="20" Track="0" Value="0" />
+        <Parameter Name="Root" Group="1" Index="21" Track="0" Value="0" />
+        <Parameter Name="Scale" Group="1" Index="22" Track="0" Value="1" />
+        <Parameter Name="Inflect Snap" Group="1" Index="23" Track="0" Value="0" />
+        <Parameter Name="Cons Tune" Group="1" Index="24" Track="0" Value="0" />
+        <Parameter Name="Cons Pitch" Group="1" Index="25" Track="0" Value="2" />
+        <Parameter Name="Vib Depth" Group="1" Index="26" Track="0" Value="25" />
+        <Parameter Name="Vib Rate" Group="1" Index="27" Track="0" Value="64" />
+        <Parameter Name="Portamento" Group="1" Index="28" Track="0" Value="0" />
+        <Parameter Name="React Level" Group="1" Index="29" Track="0" Value="64" />
+        <Parameter Name="React Tune" Group="1" Index="30" Track="0" Value="64" />
+        <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
+        <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="64" />
+        <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="127" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="64" />
+      </Parameters>
+      <Attributes />
+      <Comment></Comment>
+    </Preset>
+  </Item>
+  <Item Key="22 Tongue Twister">
+    <Preset Machine="Pedal RoboSing">
+      <Parameters>
+        <Parameter Name="Volume" Group="1" Index="0" Track="0" Value="100" />
+        <Parameter Name="Speed" Group="1" Index="1" Track="0" Value="64" />
+        <Parameter Name="Voice" Group="1" Index="2" Track="0" Value="64" />
+        <Parameter Name="Inflection" Group="1" Index="3" Track="0" Value="64" />
+        <Parameter Name="Mode" Group="1" Index="4" Track="0" Value="0" />
+        <Parameter Name="Excitation" Group="1" Index="5" Track="0" Value="1" />
+        <Parameter Name="Chip Rate" Group="1" Index="6" Track="0" Value="5" />
+        <Parameter Name="Frame" Group="1" Index="7" Track="0" Value="15" />
+        <Parameter Name="Coef Bits" Group="1" Index="8" Track="0" Value="10" />
+        <Parameter Name="DAC Bits" Group="1" Index="9" Track="0" Value="14" />
+        <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
+        <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
+        <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
+        <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
+        <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
+        <Parameter Name="Scan" Group="1" Index="17" Track="0" Value="64" />
+        <Parameter Name="Mouth" Group="1" Index="18" Track="0" Value="0" />
+        <Parameter Name="Tune" Group="1" Index="19" Track="0" Value="0" />
+        <Parameter Name="Tune To" Group="1" Index="20" Track="0" Value="0" />
+        <Parameter Name="Root" Group="1" Index="21" Track="0" Value="0" />
+        <Parameter Name="Scale" Group="1" Index="22" Track="0" Value="1" />
+        <Parameter Name="Inflect Snap" Group="1" Index="23" Track="0" Value="0" />
+        <Parameter Name="Cons Tune" Group="1" Index="24" Track="0" Value="50" />
+        <Parameter Name="Cons Pitch" Group="1" Index="25" Track="0" Value="2" />
+        <Parameter Name="Vib Depth" Group="1" Index="26" Track="0" Value="0" />
+        <Parameter Name="Vib Rate" Group="1" Index="27" Track="0" Value="64" />
+        <Parameter Name="Portamento" Group="1" Index="28" Track="0" Value="0" />
+        <Parameter Name="React Level" Group="1" Index="29" Track="0" Value="64" />
+        <Parameter Name="React Tune" Group="1" Index="30" Track="0" Value="64" />
+        <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
+        <Parameter Name="React Ring" Group="1" Index="32" Track="0" Value="100" />
+        <Parameter Name="React Vib" Group="1" Index="33" Track="0" Value="64" />
+        <Parameter Name="React Rhyme" Group="1" Index="34" Track="0" Value="64" />
+        <Parameter Name="React Allit" Group="1" Index="35" Track="0" Value="127" />
       </Parameters>
       <Attributes />
       <Comment></Comment>
