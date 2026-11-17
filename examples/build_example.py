@@ -270,6 +270,7 @@ def main():
 
     with open(EVT, "w", encoding="utf-8") as f:
         f.write("LENGTH %d\n" % LENGTH)
+        f.write("BASE %d\n" % BASE)
         for p in PARTS:
             f.write("M\t%s\t%s\n" % (p.name, p.amp))
             for ph in p.phrases: f.write("P\t%s\t%s\n" % (p.name, ph))

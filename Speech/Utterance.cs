@@ -21,6 +21,10 @@ namespace PedalRoboSing.Speech
     }
 
     public struct SourceKey { public float T, AV, AN; }
+
+    /// <summary>How a sound feels, each 0..1 with 0.5 neutral: open (ah) vs closed (ee, oo), bright (ee, s)
+    /// vs dark (oo, m), hard (t, k) vs soft (f, vowels), and sung (stressed vowel) vs unsung (consonant).</summary>
+    public struct FeelKey { public float T, Open, Bright, Hard, Sung; }
     public struct PitchKey  { public float T, Semis; }
 
     public sealed class Utterance
@@ -28,6 +32,7 @@ namespace PedalRoboSing.Speech
         public FormantKey[] F = Array.Empty<FormantKey>();
         public SourceKey[]  S = Array.Empty<SourceKey>();
         public PitchKey[]   P = Array.Empty<PitchKey>();
+        public FeelKey[]    Q = Array.Empty<FeelKey>();
         public float[] WordStart = Array.Empty<float>();
         public float[] WordEnd   = Array.Empty<float>();
         public float Length;
@@ -92,6 +97,21 @@ namespace PedalRoboSing.Speech
             float x = span > 1e-4f ? (t - a.T) / span : 1f;
             av = a.AV + (c.AV - a.AV) * x;
             an = a.AN + (c.AN - a.AN) * x;
+        }
+
+        public void SampleFeel(float t, ref int idx, out float open, out float bright, out float hard, out float sung)
+        {
+            var k = Q;
+            if (k.Length == 0) { open = bright = hard = sung = 0.5f; return; }
+            if (idx < 0 || idx >= k.Length || k[idx].T > t) idx = 0;
+            while (idx + 1 < k.Length && k[idx + 1].T <= t) idx++;
+            ref FeelKey a = ref k[idx];
+            if (idx + 1 >= k.Length || t <= a.T) { open = a.Open; bright = a.Bright; hard = a.Hard; sung = a.Sung; return; }
+            ref FeelKey c = ref k[idx + 1];
+            float span = c.T - a.T;
+            float x = span > 1e-4f ? (t - a.T) / span : 1f;
+            open = a.Open + (c.Open - a.Open) * x; bright = a.Bright + (c.Bright - a.Bright) * x;
+            hard = a.Hard + (c.Hard - a.Hard) * x; sung = a.Sung + (c.Sung - a.Sung) * x;
         }
 
         public float SamplePitch(float t, ref int idx)

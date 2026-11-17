@@ -17,5 +17,6 @@
     <Compile Include="SmokeTest.cs" />
     <Compile Include="Demo.cs" />
     <Compile Include="SongPlayer.cs" />
+    <Compile Include="ReactDemo.cs" />
   </ItemGroup>
 </Project>

@@ -32,6 +32,7 @@ static class SongPlayer
         {
             var f = line.Split('\t');
             if (line.StartsWith("LENGTH")) { length = int.Parse(line.Split(' ')[1]); continue; }
+            if (line.StartsWith("BASE")) { baseCol = int.Parse(line.Split(' ')[1]); continue; }   // layout the song was written for
             switch (f[0])
             {
                 case "M":

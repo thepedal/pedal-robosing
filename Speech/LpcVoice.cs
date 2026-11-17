@@ -62,9 +62,17 @@ namespace PedalRoboSing.Speech
         public float ScanRate;              // Scrub: phrase ms per real ms, signed
         public float ScrubTarget01;         // Scrub: position in the window, 0..1
 
+        // React: how far the feel of each sound moves the voice, each -1..+1 (0 = off)
+        public float ReactLevel;            // open vowels louder, closed quieter
+        public float ReactTune;             // open vowels more tuned
+        public float ReactSize;             // bright sounds a smaller mouth, dark a bigger one
+        public float ReactRing;             // hard consonants ring more, soft ones less
+        public float ReactVib;              // vibrato on sung sounds, none on consonants
+
         // ── Mouth state other voices may follow ──────────────────────────────
         public readonly float[] MouthF = new float[4], MouthB = new float[4];
         public float MouthAV, MouthAN, MouthSemis;
+        public float MouthOpen = 0.5f, MouthBright = 0.5f, MouthHard = 0.5f, MouthSung;
         public bool MouthLive;
 
         public bool IsActive { get; private set; }
@@ -84,7 +92,9 @@ namespace PedalRoboSing.Speech
         float _segS, _segH, _segE, _rate, _holdLeft;
         int _phase, _sylIdx, _sylLast;
         float _scanOff, _refSemis;
-        int _fi, _si, _pi;
+        int _fi, _si, _pi, _qi;
+        float _open = 0.5f, _bright = 0.5f, _hard = 0.5f, _sung;
+        float _consEff, _vibMul = 1f;
         bool _speaking, _snap;
         int _tailSamples;
         float _noteMidi = 48f, _pitchSm = 48f, _amp = 1f;
@@ -203,8 +213,8 @@ namespace PedalRoboSing.Speech
             _u = r.U ?? Utterance.Empty;
             _leader = r.Leader;
             _speaking = true;
-            _tailSamples = (int)((0.04f + 0.35f * ConsTune) * ChipRate);
-            _fi = _si = _pi = 0;
+            _tailSamples = (int)((0.04f + 0.35f * Math.Max(ConsTune, _consEff)) * ChipRate);
+            _fi = _si = _pi = _qi = 0;
             _refSemis = 0f;
             switch (r.Kind)
             {
@@ -355,6 +365,7 @@ namespace PedalRoboSing.Speech
                 if (_fSm[0] <= 0f) { _fSm[0] = 500; _fSm[1] = 1500; _fSm[2] = 2500; _fSm[3] = 3300; }
                 av = live ? L.MouthAV : 0f; an = live ? L.MouthAN : 0f;
                 semis = L?.MouthSemis ?? 0f;
+                if (L != null) { _open = L.MouthOpen; _bright = L.MouthBright; _hard = L.MouthHard; _sung = L.MouthSung; }
                 if (!_speaking) { av = 0; an = 0; }
             }
             else
@@ -364,6 +375,7 @@ namespace PedalRoboSing.Speech
                 u.SampleFormants(_kind == Kind.Run ? Math.Min(t, _tEnd) : t, ref _fi, _fTrack, _bTrack);
                 u.SampleSource(t, ref _si, out av, out an);
                 semis = u.SamplePitch(t, ref _pi);
+                u.SampleFeel(t, ref _qi, out float qo, out float qb, out float qh, out float qs);
 
                 if (_kind == Kind.Seg) semis -= _refSemis;
                 else if (_kind == Kind.Scrub && !InflSnap) semis = 0f;
@@ -388,10 +400,18 @@ namespace PedalRoboSing.Speech
                 }
                 _avSm += (av - _avSm) * c; _anSm += (an - _anSm) * c;
                 av = _avSm; an = _anSm;
+                _open += (qo - _open) * c; _bright += (qb - _bright) * c;
+                _hard += (qh - _hard) * c; _sung += (qs - _sung) * c;
+                MouthOpen = _open; MouthBright = _bright; MouthHard = _hard; MouthSung = _sung;
 
                 for (int i = 0; i < 4; i++) { MouthF[i] = _fSm[i]; MouthB[i] = _bSm[i]; }
                 MouthAV = av; MouthAN = an; MouthSemis = semis; MouthLive = _speaking;
             }
+
+            // React: the feel of the sound moves level, ring and vibrato here, tuning and size below
+            if (ReactLevel != 0f) av *= MathF.Pow(2f, ReactLevel * (_open - 0.5f) * 2f);          // up to ±6 dB
+            _consEff = Math.Clamp(ConsTune + ReactRing * (_hard - 0.5f), 0f, 1f);
+            _vibMul = Math.Clamp(1f + ReactVib * (_sung * 2f - 1f), 0f, 2f);
 
             if (Excitation == 4) { an += av * 0.8f; av = 0f; }
             else if (Breath > 0f) an += av * Breath * 0.4f;
@@ -406,8 +426,8 @@ namespace PedalRoboSing.Speech
 
             // Formants → poles: voice size, then tuning, dropping any above ~0.92 Nyquist
             float nyq = ChipRate * 0.5f;
-            float fs = FormantScale;
-            float tune = TuneAmt;
+            float fs = FormantScale * MathF.Pow(2f, ReactSize * (_bright - 0.5f) * 0.5f);         // up to ±19%
+            float tune = Math.Clamp(TuneAmt + ReactTune * (_open - 0.5f), 0f, 1f);
             float prevTarget = 0f;
             int np = 0;
             for (int i = 0; i < 4; i++)
@@ -584,7 +604,7 @@ namespace PedalRoboSing.Speech
                     _vibPhase += VibRateHz * stepMs * 0.001f;
                     if (_vibPhase >= 1f) _vibPhase -= 1f;
                     float env = Math.Clamp((_vibMs - 150f) / 250f, 0f, 1f);   // vibrato comes in after the attack
-                    _f0 *= MathF.Pow(2f, VibDepth * env * MathF.Sin(2f * MathF.PI * _vibPhase) / 12f);
+                    _f0 *= MathF.Pow(2f, VibDepth * _vibMul * env * MathF.Sin(2f * MathF.PI * _vibPhase) / 12f);
                 }
                 _stepLeft += stepSamples;
             }
@@ -623,7 +643,7 @@ namespace PedalRoboSing.Speech
             // Noise, optionally through a comb tuned to the note (pitched consonants)
             _rng ^= _rng << 13; _rng ^= _rng >> 17; _rng ^= _rng << 5;
             float noise = ((_rng & 0x10000u) != 0 ? 1f : -1f) * _an;
-            if (ConsTune > 0f)
+            if (_consEff > 0f)
             {
                 float d = Math.Clamp(ChipRate / (_f0 * ConsRatio), 2f, _comb.Length - 2);
                 float rp = _combW - d;
@@ -631,12 +651,12 @@ namespace PedalRoboSing.Speech
                 int i0 = (int)rp, i1 = i0 + 1 == _comb.Length ? 0 : i0 + 1;
                 float fr = rp - i0;
                 float delayed = _comb[i0] + (_comb[i1] - _comb[i0]) * fr;
-                float fb = 0.5f + 0.43f * ConsTune;
+                float fb = 0.5f + 0.43f * _consEff;
                 float y = noise + fb * delayed;
                 if (y > 8f) y = 8f; else if (y < -8f) y = -8f;
                 _comb[_combW] = y;
                 if (++_combW == _comb.Length) _combW = 0;
-                float mix = Math.Min(1f, 2f * ConsTune);
+                float mix = Math.Min(1f, 2f * _consEff);
                 noise += (y * MathF.Sqrt(1f - fb * fb) * 1.6f - noise) * mix;
             }
 

@@ -1,4 +1,5 @@
 LENGTH 384
+BASE 29
 M	Perc	0.86
 P	Perc	Stop. Tick. Kiss. Spit. Shock. Chit. Pass.
 G	Perc	5	1

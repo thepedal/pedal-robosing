@@ -104,6 +104,8 @@ namespace PedalRoboSing.Speech
             p.BurstB = new[] { bb1, bb2, bb3, bb4 };
         }
 
+        static void Trim(string name, float av) => _map[name].AV = av;
+
         static Phonemes()
         {
             //   name dur   F1   F2    F3   B1   B2   B3
@@ -164,6 +166,14 @@ namespace PedalRoboSing.Speech
             S("JH", true,  45, 6, 0, 0.45f, 250, 1800, 2600,  500, 1800, 3400, 4500,  800, 500, 300, 400);
             var ch = _map["CH"]; ch.Kind = PKind.Affricate;       ch.FricRef = "SH"; ch.FricDur = 70; ch.Dur += 70;
             var jh = _map["JH"]; jh.Kind = PKind.VoicedAffricate; jh.FricRef = "ZH"; jh.FricDur = 60; jh.Dur += 60;
+
+            // Vowel level trims (v1.1). A harmonic source through a narrow low
+            // resonance comes out much louder than through a wide high one, so held
+            // "ee" and "oo" were about 8 dB above "ah". Measured as held notes over
+            // six pitches and levelled to within about 2 dB.
+            Trim("IY", 0.59f); Trim("IH", 0.74f); Trim("EH", 0.90f); Trim("AE", 1.07f); Trim("AA", 1.36f);
+            Trim("AO", 0.98f); Trim("UH", 0.84f); Trim("UW", 0.51f); Trim("AH", 1.13f); Trim("ER", 1.33f);
+            Trim("AY", 1.11f); Trim("AW", 1.05f); Trim("OY", 0.97f); Trim("OW", 0.94f);
 
             Pause = new Phoneme { Name = "_", Kind = PKind.Pause, Dur = 120 };
             _map["_"] = Pause;

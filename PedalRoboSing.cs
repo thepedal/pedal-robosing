@@ -30,7 +30,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "2.0.0";
+        internal const string Version = "1.1.0";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;
@@ -141,8 +141,6 @@ namespace PedalRoboSing
         [ParameterDecl(Name = "Breath", Description = "Adds aspiration noise to voiced sounds", MinValue = 0, MaxValue = 127, DefValue = 0)]
         public int Breath { get; set; } = 0;
 
-        // ── New in v2.0 — appended (Build §3.3) ───────────────────────────────
-
         [ParameterDecl(Name = "Play Mode", Description = "How notes move the mouth through the phrase", MinValue = 0, MaxValue = 4, DefValue = 1,
             ValueDescriptions = new[] { "Phrase", "Syllable", "Phoneme", "Sync", "Scrub" })]
         public int PlayMode { get; set; } = 1;
@@ -200,6 +198,24 @@ namespace PedalRoboSing
         [ParameterDecl(Name = "Portamento", MinValue = 0, MaxValue = 127, DefValue = 0)]
         public int Portamento { get; set; } = 0;
 
+        // ── New in v1.1 — React: the sound of each word moves the voice. Appended. ──
+        // 64 = off. Above 64 works as described; below 64 does the opposite.
+
+        [ParameterDecl(Name = "React Level", Description = "Open vowels (ah) louder, closed ones (ee, oo) quieter", MinValue = 0, MaxValue = 127, DefValue = 64)]
+        public int ReactLevel { get; set; } = 64;
+
+        [ParameterDecl(Name = "React Tune", Description = "Open vowels get more Tune, closed ones less", MinValue = 0, MaxValue = 127, DefValue = 64)]
+        public int ReactTune { get; set; } = 64;
+
+        [ParameterDecl(Name = "React Size", Description = "Bright sounds (ee, s) shrink the mouth, dark ones (oo, m) enlarge it", MinValue = 0, MaxValue = 127, DefValue = 64)]
+        public int ReactSize { get; set; } = 64;
+
+        [ParameterDecl(Name = "React Ring", Description = "Hard consonants (t, k, p) ring with more pitch, soft ones (f, th) with less", MinValue = 0, MaxValue = 127, DefValue = 64)]
+        public int ReactRing { get; set; } = 64;
+
+        [ParameterDecl(Name = "React Vib", Description = "Vibrato grows on stressed vowels and drops out on consonants", MinValue = 0, MaxValue = 127, DefValue = 64)]
+        public int ReactVib { get; set; } = 64;
+
         // ── Track parameters (group 2) ─────────────────────────────────────────
         // From ReBuzz 1848 (PR #221) each track's setter fires on its own, so no
         // pvalues sibling poll is needed (Core §14 is for older builds).
@@ -236,7 +252,6 @@ namespace PedalRoboSing
             if ((uint)track < MaxVoices && (uint)value <= 100) { _words[track] = value; _cursor[track] = 0; }
         }
 
-        // New in v2.0
         [ParameterDecl(Name = "Step", Description = "Syllable/Phoneme: jump to this step of the Word/Words window", MinValue = 1, MaxValue = 200, IsStateless = true)]
         public void SetStep(int value, int track)
         {
@@ -277,6 +292,8 @@ namespace PedalRoboSing
                 case "Vib Rate": return (2f + value / 127f * 8f).ToString("0.0") + " Hz";
                 case "Portamento": return value == 0 ? "Off" : PortaMsFor(value).ToString("0") + " ms";
                 case "Position": return (value / 10f).ToString("0.0") + "%";
+                case "React Level": case "React Tune": case "React Size": case "React Ring": case "React Vib":
+                    return value == 64 ? "Off" : ((value - 64) * 100 / 63).ToString("+0;-0") + "%";
                 default: return null;
             }
         }
@@ -285,6 +302,7 @@ namespace PedalRoboSing
         // Voice up = smaller vocal tract = formants scaled up (0.66x .. 1.52x)
         static float FormantScaleFor(int v) => MathF.Pow(2f, (v - 64) / 64f * 0.6f);
 
+        static float React(int v) => Math.Clamp((v - 64) / 63f, -1f, 1f);
         static float GlideMsFor(int v) => v <= 0 ? 0f : 2f * MathF.Pow(2f, v / 127f * 9f);      // 2 ms .. 1 s
         static float PortaMsFor(int v) => v <= 0 ? 0f : 5f * MathF.Pow(2f, v / 127f * 7.6f);    // 5 ms .. 1 s
 
@@ -422,6 +440,8 @@ namespace PedalRoboSing
                 v.VibDepth = VibDepth / 127f; v.VibRateHz = 2f + VibRate / 127f * 8f; v.PortaMs = porta;
                 v.TickMs = tickMs; v.SyncTicks = SyncStep; v.ScanRate = (Scan - 64) / 32f;
                 v.ScrubTarget01 = _position[i] / 1000f;
+                v.ReactLevel = React(ReactLevel); v.ReactTune = React(ReactTune); v.ReactSize = React(ReactSize);
+                v.ReactRing = React(ReactRing); v.ReactVib = React(ReactVib);
             }
 
             // Note events

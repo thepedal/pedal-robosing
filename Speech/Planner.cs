@@ -107,6 +107,7 @@ namespace PedalRoboSing.Speech
             BuildSpectral(insts, u);
             BuildWords(items, insts, wordIdx, u);
             BuildUnits(items, insts, u);
+            BuildFeel(insts, u);
             return u;
         }
 
@@ -562,6 +563,55 @@ namespace PedalRoboSing.Speech
             }
             u.WordStart = ws;
             u.WordEnd = we;
+        }
+
+        // ── How each sound feels (drives the React controls) ─────────────────
+        static float Unit(float x, float lo, float hi) => Math.Clamp((x - lo) / (hi - lo), 0f, 1f);
+
+        static void BuildFeel(List<Inst> insts, Utterance u)
+        {
+            var keys = new List<FeelKey>();
+            foreach (var x in insts)
+            {
+                var ph = x.Ph;
+                if (ph.Kind == PKind.Pause) continue;
+                var k = new FeelKey { T = x.T + x.D * 0.5f, Open = 0.5f, Bright = 0.5f, Hard = 0.5f, Sung = 0f };
+                switch (ph.Kind)
+                {
+                    case PKind.Vowel:
+                    case PKind.Diphthong:
+                        k.Open = Unit(ph.F[0], 300f, 700f);
+                        k.Bright = Unit(ph.F[1], 900f, 2200f);
+                        k.Sung = x.Stress ? 1f : 0.7f;
+                        break;
+                    case PKind.Glide:
+                    case PKind.Nasal:
+                        k.Bright = Unit(ph.F[1], 600f, 2100f) * 0.8f;
+                        k.Hard = 0.3f; k.Sung = 0.5f;
+                        break;
+                    case PKind.Fricative:
+                    case PKind.VoicedFricative:
+                    case PKind.Aspirate:
+                    {
+                        bool sib = ph.Name == "S" || ph.Name == "SH" || ph.Name == "Z" || ph.Name == "ZH";
+                        k.Bright = sib ? 1f : 0.45f;
+                        k.Hard = sib ? 0.6f : 0.15f;
+                        break;
+                    }
+                    default:                                   // stops and affricates
+                    {
+                        bool voiced = ph.Kind == PKind.VoicedStop || ph.Kind == PKind.VoicedAffricate;
+                        k.T = x.T + ph.Closure;                // the feel peaks at the burst
+                        k.Hard = voiced ? 0.85f : 1f;
+                        k.Bright = Unit(ph.BurstF[1], 900f, 1900f);
+                        break;
+                    }
+                }
+                keys.Add(k);
+            }
+            for (int i = 1; i < keys.Count; i++)
+                if (keys[i].T < keys[i - 1].T) { var k = keys[i]; k.T = keys[i - 1].T; keys[i] = k; }
+            u.Q = keys.ToArray();
         }
 
         // ── Syllables and phonemes (the units the step modes play) ───────────

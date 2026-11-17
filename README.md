@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 2.0.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 1.1.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 Everything is original: English letter-to-sound rules and a formant model,
 converted to filter coefficients as it plays. No speech ROM data and no code
@@ -48,6 +48,23 @@ Intelligibility falls as Tune rises; that is the trade.
 friends is passed through a comb tuned to the note (or a fifth, an octave, and
 so on above it), which rings on briefly after the consonant. Phoneme mode with
 Hold off turns a line of text into tuned percussion.
+
+**The sound of the words moves the voice** (the five React controls, v1.1):
+the machine rates every sound it is about to make as open or closed, bright or
+dark, hard or soft, sung or unsung, and each React control lets one of those
+move one thing. All are off at 64; above 64 works as described and below 64
+does the opposite.
+
+| Control | Listens to | Moves |
+|---|---|---|
+| React Level | open vowels (ah) against closed ones (ee, oo) | loudness, up to 6 dB either way |
+| React Tune | the same | the Tune amount, so open vowels ring and closed ones stay plain |
+| React Size | bright sounds (ee, s) against dark ones (oo, m) | the mouth size, exaggerating each vowel's colour |
+| React Ring | hard consonants (t, k, p) against soft ones (f, th) | the pitched-consonant amount |
+| React Vib | stressed vowels against consonants | vibrato depth (needs Vib Depth above 0) |
+
+Glide smooths these along with the mouth, and a shared mouth passes them to the
+tracks that follow it.
 
 ## Track columns
 
@@ -97,8 +114,7 @@ track 1's mouth and only supply pitch, so a chord speaks as one voice.
 | Vib Depth | 0–127 | 0 | Up to ±1 semitone, fading in after the attack. |
 | Vib Rate | 0–127 | 64 | 2 to 10 Hz. |
 | Portamento | 0–127 | 0 | Pitch glide time (off, or 5 ms to 1 s). |
-
-The first 13 are the v1.0 set; the rest were appended in v2.0.
+| React Level, Tune, Size, Ring, Vib | 0–127 | 64 (off) | See above. |
 
 ## Writing phrases
 
@@ -120,7 +136,8 @@ The first 13 are the v1.0 set; the rest were appended in v2.0.
 `Pedal RoboSing.prs.xml` loads automatically: Syllable Singer, Overtone Singer,
 Scale Bells, Chant in Time, Choir One Mouth, Tuned Percussion, Scrub Pad,
 Backwards Loop, Speech Melody, Whisper Hiss, Chip Talker, Chip Syllables,
-Spelling Bee, Broken Batteries, Giant Drone and Tiny Robot. They set the globals
+Spelling Bee, Broken Batteries, Giant Drone, Tiny Robot, Reactive Singer, Open
+Vowels Ring, Rubber Mouth and Hard Edges. They set the globals
 only. `gen_presets.py --check` verifies the bundle against the source.
 
 ## How it works
@@ -159,6 +176,52 @@ Mute machines to hear each alone. `examples/build_example.py` rebuilds it from
 editor blocks are cloned from that save, never written by hand.
 `tests/compile` can play the same events through the machine code:
 `dotnet run -c Release -- song ../../examples/robosing_showcase.events.txt out.wav`.
+
+## Singing a melody from a MIDI file
+
+`examples/midi_to_robosing.py` turns one channel of a MIDI file into a song with
+one RoboSing in Syllable mode, a note per syllable:
+
+```
+python midi_to_robosing.py song.mid --list              # show the channels
+python midi_to_robosing.py song.mid --channel 1 -o song.bmxml
+```
+
+The melody is cut into phrases at rests (`--gap`, in beats). Every phrase becomes
+a line of the phrase list filled with one `la` per note, and a template
+(`song.lyrics.txt`) lists how many syllables each line needs. Type the words in
+ReBuzz with Edit Phrases, where each line's syllable count is shown, or edit the
+template and run again with `--lyrics song.lyrics.txt`. Needs Python 3 and
+`robosing_ref.bmxml` beside the script.
+
+### Drums and melody together
+
+`examples/midi_to_song.py` does the same and also puts the MIDI drum channel on
+one Pedal DrumGrid, a lane per drum sound in kit order, with velocities:
+
+```
+python midi_to_song.py song.mid --melody-channel 1 -o song.bmxml
+python midi_to_song.py song.mid -o song.bmxml            # drums only
+```
+
+It prints the lane list (also written to `song.lanes.txt`) so you know which
+sample to load on each lane; DrumGrid is left empty. Use `--tpb 8` if it reports
+hits falling between rows. It needs `drums_singer_ref.bmxml` (a ReBuzz save with
+one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
+`midi_to_robosing.py` beside it.
+
+## Changes
+
+**1.1.0**
+- Five React controls: the sound of each word moves level, tuning, mouth size,
+  consonant ring and vibrato. Four presets use them.
+- Vowel loudness evened out. Held "ee" and "oo" were about 8 dB louder than
+  "ah"; they are now within about 2 dB, averaged over pitch. Songs made with
+  1.0 will sound slightly different in balance.
+- The React controls are five new global parameters, so the track columns move
+  five places to the right. ReBuzz matches saved parameters by name, so songs
+  saved with 1.0 should load unchanged; check one before relying on it. Files
+  written by the example scripts use the layout of their reference save.
 
 ## Limitations
 
