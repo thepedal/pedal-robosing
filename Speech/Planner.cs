@@ -290,12 +290,49 @@ namespace PedalRoboSing.Speech
             bool content = !FunctionWords.Contains(w);
             var it = new Item { Word = wordIdx, Accent = content, PauseAfter = WordGap, Text = w };
             if (LetterToSound.Exceptions.TryGetValue(w, out var spec)) { ParseTokens(spec, it, content); return it; }
+            spec = Lexicon.Lookup(w);                    // the CMU Pronouncing Dictionary
+            if (spec != null)
+            {
+                if (!content) spec = spec.Replace("1", "");  // filler words stay unstressed, as with the built-in list
+                ParseTokens(spec, it, content);
+                return it;
+            }
+            spec = Inflected(w);                         // a built-in word plus a regular ending the dictionary lacks
+            if (spec != null) { ParseTokens(spec, it, content); return it; }
             string letters = w.Replace("'", "");
             if (letters.Length == 1) { ParseTokens(LetterToSound.LetterNames[letters[0] - 'A'], it); return it; }
             scratch.Clear();
             LetterToSound.Translate(w, scratch);
+            for (int k = scratch.Count - 1; k > 0; k--)   // doubled letters are one sound (running, little)
+                if (scratch[k] == scratch[k - 1] && !(Phonemes.Get(scratch[k])?.IsVowel ?? true)) scratch.RemoveAt(k);
             ParseTokens(string.Join(" ", scratch), it, content);
             return it;
+        }
+
+        // A dictionary word with a regular ending, pronounced from the dictionary entry
+        static string Inflected(string w)
+        {
+            string stem, last;
+            bool Try(string s) => LetterToSound.Exceptions.TryGetValue(s, out stem);
+            string Last() { var p = stem.Split(' '); return p[p.Length - 1].TrimEnd('0', '1', '2'); }
+            const string Voiceless = " P T K F TH ", Sibilant = " S Z SH ZH CH JH ";
+
+            string bare = w.EndsWith("'S") ? w.Substring(0, w.Length - 2) : null;
+            if ((bare != null && Try(bare)) || (w.EndsWith("S") && Try(w.Substring(0, w.Length - 1)))
+                || (w.EndsWith("ES") && Try(w.Substring(0, w.Length - 2))))
+            {
+                last = " " + Last() + " ";
+                return stem + (Sibilant.Contains(last) ? " IH Z" : Voiceless.Contains(last) ? " S" : " Z");
+            }
+            if (w.EndsWith("ING") && (Try(w.Substring(0, w.Length - 3)) || Try(w.Substring(0, w.Length - 3) + "E")))
+                return stem + " IH NG";
+            if (w.EndsWith("ED") && (Try(w.Substring(0, w.Length - 2)) || Try(w.Substring(0, w.Length - 1))))
+            {
+                last = " " + Last() + " ";
+                return stem + (last == " T " || last == " D " ? " IH D" : Voiceless.Contains(last) || Sibilant.Contains(last) && last != " Z " && last != " ZH " && last != " JH " ? " T" : " D");
+            }
+            if (w.EndsWith("LY") && Try(w.Substring(0, w.Length - 2))) return stem + " L IY";
+            return null;
         }
 
         static void AddSaid(Tok t, int w, List<Item> items, List<string> scratch)

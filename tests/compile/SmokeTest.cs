@@ -37,6 +37,15 @@ static class Smoke
     static void Main(string[] args)
     {
         if (args.Length == 2 && args[0] == "demo") { Demo.Run(args[1]); return; }
+        if (args.Length >= 2 && args[0] == "say")
+        {
+            var sw0 = System.Diagnostics.Stopwatch.StartNew();
+            int words = Lexicon.Count;
+            Console.WriteLine($"lexicon: {words} words, loaded in {sw0.ElapsedMilliseconds} ms");
+            for (int i = 1; i < args.Length; i++)
+                Console.WriteLine($"{args[i],-12} {Planner.Build(args[i], SpeakMode.Speak).Phonetic.Replace(" .", "")}");
+            return;
+        }
         if (args.Length == 2 && args[0] == "react") { ReactDemo.Run(args[1]); return; }
         if (args.Length == 3 && args[0] == "song") { SongPlayer.Run(args[1], args[2]); return; }
 

@@ -7,11 +7,13 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 1.2.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 1.3.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
-Everything is original: English letter-to-sound rules and a formant model,
-converted to filter coefficients as it plays. No speech ROM data and no code
-from any other synthesiser is used.
+The voice is original: a formant model converted to filter coefficients as it
+plays, with no speech ROM data and no code from any other synthesiser. Word
+pronunciations come from the CMU Pronouncing Dictionary (about 125,000 words,
+built into the DLL), with the machine's own spelling rules for anything the
+dictionary doesn't have.
 
 ## Quick start
 
@@ -152,8 +154,8 @@ only. `gen_presets.py --check` verifies the bundle against the source.
 
 ## How it works
 
-1. **Text to mouth movement.** Dictionary and letter-to-sound rules give
-   phonemes; each becomes formant, voicing, noise and pitch keyframes. Words are
+1. **Text to mouth movement.** The built-in word list, the CMU dictionary and
+   then the letter-to-sound rules give phonemes; each becomes formant, voicing, noise and pitch keyframes. Words are
    split into syllables (maximal onset), and every syllable and phoneme gets a
    start, a hold point inside its vowel, and an end. All of this is compiled on
    the UI thread when the phrase list changes, so playback allocates nothing.
@@ -222,6 +224,24 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 
 ## Changes
 
+**1.3.0**
+- The CMU Pronouncing Dictionary is built in: 124,911 words, packed to 750 KB
+  inside the DLL and loaded once in about 30 ms. Words are looked up in the
+  machine's own short list first, then the dictionary, then the spelling rules.
+- Some words change their syllable count because the dictionary is right where
+  the rules were wrong (everything is now 3 syllables, evening 2) or takes a
+  different view (fire is 2: fi-er). A line you matched to notes syllable by
+  syllable may now be one out; the phrase editor shows each line's count.
+- Rhyme and alliteration detection is more accurate, since it works on the
+  pronunciation.
+
+**1.2.1**
+- Pronunciation: about 100 common lyric words added to the dictionary (tonight,
+  today, together, heart, believe, forever, enough, touch, friend, eyes, ...),
+  mostly fixing a wrong stress or vowel. Regular endings of dictionary words
+  are now handled (hearts, dreaming, touched), and doubled letters are one
+  sound (running, little).
+
 **1.2.0**
 - React Rhyme and React Allit: rhyming syllables and alliterating consonants
   are detected and brought out. Two presets use them alone.
@@ -254,7 +274,8 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
   checked one by one in ReBuzz.
 - **Tuned by measurement, not by ear.** Levels and spectra were checked; how it
   actually sounds needs listening.
-- English only. Use brackets for names and odd spellings.
+- English only, in the dictionary's American pronunciation. Names and made-up
+  words fall back to the spelling rules; use brackets when those get it wrong.
 - Editing phrases may not mark the song as modified. Save with Ctrl+S.
 - Needs ReBuzz 1848 or later for notes on several tracks in one row.
 - Held notes with no note-off sustain for ever, like any synth. Shared-mouth
@@ -275,6 +296,14 @@ not part of the machine build.
 ## Credits and licence
 
 Copyright (C) 2026 thepedal. GPL-3.0-or-later; see `LICENSE`.
+
+Pronunciations come from the **CMU Pronouncing Dictionary**
+(github.com/cmusphinx/cmudict, commit 74790861), Copyright (C) 1993-2015
+Carnegie Mellon University, used and redistributed under its own licence, which
+is reproduced in `Speech/cmudict.LICENSE.txt`. `tools/build_lexicon.py` packs it
+into `Speech/cmudict.bin.gz`: first pronunciation of each word only, words with
+characters other than letters and apostrophes left out, and unstressed AH
+written as the schwa AX. The packed file is embedded in the DLL.
 
 The letter-to-sound rules follow the method published in *Automatic Translation
 of English Text to Phonetics by Means of Letter-to-Sound Rules* by H. S.

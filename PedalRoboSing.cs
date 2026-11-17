@@ -11,6 +11,8 @@
 // The voice itself is a 10-pole lattice filter with optional LPC-chip grit.
 // Everything is original: English letter-to-sound rules and a formant model,
 // converted to reflection coefficients on the fly. No speech ROM data is used.
+// Word pronunciations come from the CMU Pronouncing Dictionary (see
+// Speech/Lexicon.cs and Speech/cmudict.LICENSE.txt), with the rules as fallback.
 //
 // This program is free software: you can redistribute it and/or modify it under
 // the terms of the GNU General Public License as published by the Free Software
@@ -30,7 +32,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "1.2.0";
+        internal const string Version = "1.3.0";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;
@@ -530,6 +532,8 @@ namespace PedalRoboSing
                             "Vocal-tract instrument: typed phrases become mouth movement that notes play a\n" +
                             "syllable at a time, in sync, or scrubbed, with resonances tuned to the music.\n" +
                             "Original rules and formant model; no speech ROM data.\n\n" +
+                            "Pronunciations from the CMU Pronouncing Dictionary,\n" +
+                            "Copyright (C) 1993-2015 Carnegie Mellon University.\n\n" +
                             "github.com/thepedal/pedal-robosing\n" +
                             "GPL-3.0-or-later",
                             "About Pedal RoboSing")
