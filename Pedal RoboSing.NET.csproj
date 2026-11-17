@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Build §1.2: mandatory properties for every managed machine.
+       DebugType/DebugSymbols/GenerateDependencyFile keep .pdb and .deps.json
+       out of C:\Program Files\ReBuzz (only the .dll is loaded at runtime). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <NoWarn>MSB3277</NoWarn>
+
+    <!-- Build §2: the .NET suffix routes the DLL to ReBuzz's managed loader;
+         the filename (minus .NET) is the machine-browser display name. -->
+    <AssemblyName>Pedal RoboSing.NET</AssemblyName>
+    <RootNamespace>PedalRoboSing</RootNamespace>
+    <Version>2.0.0</Version>
+    <Authors>thepedal</Authors>
+    <Description>Pedal RoboSing: vocal-tract instrument for ReBuzz</Description>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <ReBuzzPath Condition="'$(ReBuzzPath)' == ''">C:\Program Files\ReBuzz</ReBuzzPath>
+  </PropertyGroup>
+
+  <!-- Host DLLs ship with ReBuzz: Private=false, never copied or redistributed. -->
+  <ItemGroup>
+    <Reference Include="BuzzGUI.Interfaces">
+      <HintPath>$(ReBuzzPath)\BuzzGUI.Interfaces.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- MenuItemVM / SimpleCommand for the right-click menu -->
+    <Reference Include="BuzzGUI.Common">
+      <HintPath>$(ReBuzzPath)\BuzzGUI.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- The offline test harness has its own project; keep it out of the machine. -->
+  <ItemGroup>
+    <Compile Remove="tests\**" />
+    <None Remove="tests\**" />
+    <None Remove="gen_presets.py" />
+  </ItemGroup>
+
+  <!-- Build §1.3 / §3.5.1: deploy the dll and the auto-load preset bundle to
+       Gear\Generators. ContinueOnError survives ReBuzz's file lock; a missing or
+       misnamed bundle raises a visible warning instead of failing silently. -->
+  <Target Name="DeployToReBuzz" AfterTargets="Build">
+    <PropertyGroup>
+      <_PresetPath>$(MSBuildProjectDirectory)\Pedal RoboSing.prs.xml</_PresetPath>
+      <_GearDir>$(ReBuzzPath)\Gear\Generators\</_GearDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_AnyPreset Include="$(MSBuildProjectDirectory)\*.prs.xml" />
+    </ItemGroup>
+
+    <Message Text="Deploying $(TargetFileName) -> $(_GearDir)" Importance="high" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(_GearDir)" ContinueOnError="true" />
+
+    <Message Condition="Exists('$(_PresetPath)')"
+             Text="Deploying preset bundle -> $(_GearDir)" Importance="high" />
+    <Copy Condition="Exists('$(_PresetPath)')"
+          SourceFiles="$(_PresetPath)" DestinationFolder="$(_GearDir)" ContinueOnError="true" />
+    <Warning Condition="!Exists('$(_PresetPath)')"
+             Text="Preset bundle NOT deployed: '$(_PresetPath)' not found. Found instead: @(_AnyPreset). It must be named 'Pedal RoboSing.prs.xml'." />
+  </Target>
+
+</Project>

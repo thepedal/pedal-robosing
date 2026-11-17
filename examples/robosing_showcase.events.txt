@@ -1,0 +1,633 @@
+LENGTH 384
+M	Perc	0.86
+P	Perc	Stop. Tick. Kiss. Spit. Shock. Chit. Pass.
+G	Perc	5	1
+G	Perc	6	5
+G	Perc	7	15
+G	Perc	8	10
+G	Perc	9	14
+G	Perc	10	20
+G	Perc	13	2
+G	Perc	14	0
+G	Perc	24	115
+G	Perc	25	2
+E	Perc	0	0	31	1
+E	Perc	64	0	31	1
+E	Perc	128	0	31	1
+E	Perc	192	0	31	1
+E	Perc	256	0	31	1
+E	Perc	0	0	29	42
+E	Perc	2	0	29	42
+E	Perc	3	0	29	49
+E	Perc	4	0	29	42
+E	Perc	6	0	29	51
+E	Perc	7	0	29	42
+E	Perc	8	0	29	53
+E	Perc	10	0	29	42
+E	Perc	11	0	29	40
+E	Perc	12	0	29	42
+E	Perc	14	0	29	49
+E	Perc	15	0	29	51
+E	Perc	16	0	29	42
+E	Perc	18	0	29	42
+E	Perc	19	0	29	49
+E	Perc	20	0	29	42
+E	Perc	22	0	29	51
+E	Perc	23	0	29	42
+E	Perc	24	0	29	53
+E	Perc	26	0	29	42
+E	Perc	27	0	29	40
+E	Perc	28	0	29	42
+E	Perc	30	0	29	49
+E	Perc	31	0	29	51
+E	Perc	32	0	29	42
+E	Perc	34	0	29	42
+E	Perc	35	0	29	49
+E	Perc	36	0	29	42
+E	Perc	38	0	29	51
+E	Perc	39	0	29	42
+E	Perc	40	0	29	53
+E	Perc	42	0	29	42
+E	Perc	43	0	29	40
+E	Perc	44	0	29	42
+E	Perc	46	0	29	49
+E	Perc	47	0	29	51
+E	Perc	48	0	29	42
+E	Perc	50	0	29	42
+E	Perc	51	0	29	49
+E	Perc	52	0	29	42
+E	Perc	54	0	29	51
+E	Perc	55	0	29	42
+E	Perc	56	0	29	53
+E	Perc	58	0	29	42
+E	Perc	59	0	29	40
+E	Perc	60	0	29	42
+E	Perc	62	0	29	49
+E	Perc	63	0	29	51
+E	Perc	64	0	29	42
+E	Perc	66	0	29	42
+E	Perc	67	0	29	49
+E	Perc	68	0	29	42
+E	Perc	70	0	29	51
+E	Perc	71	0	29	42
+E	Perc	72	0	29	53
+E	Perc	74	0	29	42
+E	Perc	75	0	29	40
+E	Perc	76	0	29	42
+E	Perc	78	0	29	49
+E	Perc	79	0	29	51
+E	Perc	80	0	29	42
+E	Perc	82	0	29	42
+E	Perc	83	0	29	49
+E	Perc	84	0	29	42
+E	Perc	86	0	29	51
+E	Perc	87	0	29	42
+E	Perc	88	0	29	53
+E	Perc	90	0	29	42
+E	Perc	91	0	29	40
+E	Perc	92	0	29	42
+E	Perc	94	0	29	49
+E	Perc	95	0	29	51
+E	Perc	96	0	29	42
+E	Perc	98	0	29	42
+E	Perc	99	0	29	49
+E	Perc	100	0	29	42
+E	Perc	102	0	29	51
+E	Perc	103	0	29	42
+E	Perc	104	0	29	53
+E	Perc	106	0	29	42
+E	Perc	107	0	29	40
+E	Perc	108	0	29	42
+E	Perc	110	0	29	49
+E	Perc	111	0	29	51
+E	Perc	112	0	29	42
+E	Perc	114	0	29	42
+E	Perc	115	0	29	49
+E	Perc	116	0	29	42
+E	Perc	118	0	29	51
+E	Perc	119	0	29	42
+E	Perc	120	0	29	53
+E	Perc	122	0	29	42
+E	Perc	123	0	29	40
+E	Perc	124	0	29	42
+E	Perc	126	0	29	49
+E	Perc	127	0	29	51
+E	Perc	128	0	29	42
+E	Perc	130	0	29	42
+E	Perc	131	0	29	49
+E	Perc	132	0	29	42
+E	Perc	134	0	29	51
+E	Perc	135	0	29	42
+E	Perc	136	0	29	53
+E	Perc	138	0	29	42
+E	Perc	139	0	29	40
+E	Perc	140	0	29	42
+E	Perc	142	0	29	49
+E	Perc	143	0	29	51
+E	Perc	144	0	29	42
+E	Perc	146	0	29	42
+E	Perc	147	0	29	49
+E	Perc	148	0	29	42
+E	Perc	150	0	29	51
+E	Perc	151	0	29	42
+E	Perc	152	0	29	53
+E	Perc	154	0	29	42
+E	Perc	155	0	29	40
+E	Perc	156	0	29	42
+E	Perc	158	0	29	49
+E	Perc	159	0	29	51
+E	Perc	160	0	29	42
+E	Perc	162	0	29	42
+E	Perc	163	0	29	49
+E	Perc	164	0	29	42
+E	Perc	166	0	29	51
+E	Perc	167	0	29	42
+E	Perc	168	0	29	53
+E	Perc	170	0	29	42
+E	Perc	171	0	29	40
+E	Perc	172	0	29	42
+E	Perc	174	0	29	49
+E	Perc	175	0	29	51
+E	Perc	176	0	29	42
+E	Perc	178	0	29	42
+E	Perc	179	0	29	49
+E	Perc	180	0	29	42
+E	Perc	182	0	29	51
+E	Perc	183	0	29	42
+E	Perc	184	0	29	53
+E	Perc	186	0	29	42
+E	Perc	187	0	29	40
+E	Perc	188	0	29	42
+E	Perc	190	0	29	49
+E	Perc	191	0	29	51
+E	Perc	192	0	29	42
+E	Perc	194	0	29	42
+E	Perc	195	0	29	49
+E	Perc	196	0	29	42
+E	Perc	198	0	29	51
+E	Perc	199	0	29	42
+E	Perc	200	0	29	53
+E	Perc	202	0	29	42
+E	Perc	203	0	29	40
+E	Perc	204	0	29	42
+E	Perc	206	0	29	49
+E	Perc	207	0	29	51
+E	Perc	208	0	29	42
+E	Perc	210	0	29	42
+E	Perc	211	0	29	49
+E	Perc	212	0	29	42
+E	Perc	214	0	29	51
+E	Perc	215	0	29	42
+E	Perc	216	0	29	53
+E	Perc	218	0	29	42
+E	Perc	219	0	29	40
+E	Perc	220	0	29	42
+E	Perc	222	0	29	49
+E	Perc	223	0	29	51
+E	Perc	224	0	29	42
+E	Perc	226	0	29	42
+E	Perc	227	0	29	49
+E	Perc	228	0	29	42
+E	Perc	230	0	29	51
+E	Perc	231	0	29	42
+E	Perc	232	0	29	53
+E	Perc	234	0	29	42
+E	Perc	235	0	29	40
+E	Perc	236	0	29	42
+E	Perc	238	0	29	49
+E	Perc	239	0	29	51
+E	Perc	240	0	29	42
+E	Perc	242	0	29	42
+E	Perc	243	0	29	49
+E	Perc	244	0	29	42
+E	Perc	246	0	29	51
+E	Perc	247	0	29	42
+E	Perc	248	0	29	53
+E	Perc	250	0	29	42
+E	Perc	251	0	29	40
+E	Perc	252	0	29	42
+E	Perc	254	0	29	49
+E	Perc	255	0	29	51
+E	Perc	256	0	29	42
+E	Perc	258	0	29	42
+E	Perc	259	0	29	49
+E	Perc	260	0	29	42
+E	Perc	262	0	29	51
+E	Perc	263	0	29	42
+E	Perc	264	0	29	53
+E	Perc	266	0	29	42
+E	Perc	267	0	29	40
+E	Perc	268	0	29	42
+E	Perc	270	0	29	49
+E	Perc	271	0	29	51
+E	Perc	272	0	29	42
+E	Perc	274	0	29	42
+E	Perc	275	0	29	49
+E	Perc	276	0	29	42
+E	Perc	278	0	29	51
+E	Perc	279	0	29	42
+E	Perc	280	0	29	53
+E	Perc	282	0	29	42
+E	Perc	283	0	29	40
+E	Perc	284	0	29	42
+E	Perc	286	0	29	49
+E	Perc	287	0	29	51
+E	Perc	288	0	29	42
+E	Perc	290	0	29	42
+E	Perc	291	0	29	49
+E	Perc	292	0	29	42
+E	Perc	294	0	29	51
+E	Perc	295	0	29	42
+E	Perc	296	0	29	53
+E	Perc	298	0	29	42
+E	Perc	299	0	29	40
+E	Perc	300	0	29	42
+E	Perc	302	0	29	49
+E	Perc	303	0	29	51
+E	Perc	304	0	29	42
+E	Perc	306	0	29	42
+E	Perc	307	0	29	49
+E	Perc	308	0	29	42
+E	Perc	310	0	29	51
+E	Perc	311	0	29	42
+E	Perc	312	0	29	53
+E	Perc	314	0	29	42
+E	Perc	315	0	29	40
+E	Perc	316	0	29	42
+E	Perc	318	0	29	49
+E	Perc	319	0	29	51
+E	Perc	320	0	29	255
+M	Drone	0.7
+P	Drone	Seven silver [S ER1 K AX T S] sing in the dark.
+G	Drone	5	2
+G	Drone	6	5
+G	Drone	7	15
+G	Drone	8	10
+G	Drone	9	14
+G	Drone	10	30
+G	Drone	19	127
+G	Drone	20	1
+G	Drone	21	9
+G	Drone	22	7
+G	Drone	16	45
+E	Drone	64	0	31	1
+E	Drone	192	0	31	1
+E	Drone	320	0	31	1
+E	Drone	64	0	29	42
+E	Drone	68	0	29	42
+E	Drone	72	0	29	42
+E	Drone	76	0	29	42
+E	Drone	80	0	29	42
+E	Drone	84	0	29	42
+E	Drone	88	0	29	42
+E	Drone	92	0	29	42
+E	Drone	96	0	29	42
+E	Drone	100	0	29	42
+E	Drone	104	0	29	42
+E	Drone	108	0	29	42
+E	Drone	112	0	29	42
+E	Drone	116	0	29	42
+E	Drone	120	0	29	42
+E	Drone	124	0	29	42
+E	Drone	128	0	29	40
+E	Drone	132	0	29	40
+E	Drone	136	0	29	40
+E	Drone	140	0	29	40
+E	Drone	144	0	29	40
+E	Drone	148	0	29	40
+E	Drone	152	0	29	40
+E	Drone	156	0	29	40
+E	Drone	160	0	29	42
+E	Drone	164	0	29	42
+E	Drone	168	0	29	42
+E	Drone	172	0	29	42
+E	Drone	176	0	29	42
+E	Drone	180	0	29	42
+E	Drone	184	0	29	42
+E	Drone	188	0	29	42
+E	Drone	192	0	29	49
+E	Drone	196	0	29	49
+E	Drone	200	0	29	49
+E	Drone	204	0	29	49
+E	Drone	208	0	29	49
+E	Drone	212	0	29	49
+E	Drone	216	0	29	49
+E	Drone	220	0	29	49
+E	Drone	224	0	29	42
+E	Drone	228	0	29	42
+E	Drone	232	0	29	42
+E	Drone	236	0	29	42
+E	Drone	240	0	29	42
+E	Drone	244	0	29	42
+E	Drone	248	0	29	42
+E	Drone	252	0	29	42
+E	Drone	256	0	29	40
+E	Drone	260	0	29	40
+E	Drone	264	0	29	40
+E	Drone	268	0	29	40
+E	Drone	272	0	29	40
+E	Drone	276	0	29	40
+E	Drone	280	0	29	40
+E	Drone	284	0	29	40
+E	Drone	288	0	29	42
+E	Drone	292	0	29	42
+E	Drone	296	0	29	42
+E	Drone	300	0	29	42
+E	Drone	304	0	29	42
+E	Drone	308	0	29	42
+E	Drone	312	0	29	42
+E	Drone	316	0	29	42
+E	Drone	320	0	29	42
+E	Drone	324	0	29	42
+E	Drone	328	0	29	42
+E	Drone	332	0	29	42
+E	Drone	336	0	29	42
+E	Drone	340	0	29	42
+E	Drone	344	0	29	42
+E	Drone	348	0	29	42
+E	Drone	352	0	29	42
+E	Drone	356	0	29	42
+E	Drone	360	0	29	42
+E	Drone	364	0	29	42
+E	Drone	368	0	29	42
+E	Drone	372	0	29	42
+E	Drone	376	0	29	42
+E	Drone	380	0	29	255
+M	Lead	0.51
+P	Lead	I am a robot, I make strange music.
+P	Lead	Sing with me in harmony tonight.
+G	Lead	5	1
+G	Lead	6	5
+G	Lead	7	15
+G	Lead	8	10
+G	Lead	9	14
+G	Lead	10	30
+G	Lead	19	105
+G	Lead	26	25
+G	Lead	28	20
+G	Lead	16	15
+E	Lead	128	0	31	1
+E	Lead	160	0	31	2
+E	Lead	192	0	31	1
+E	Lead	224	0	31	2
+E	Lead	256	0	31	1
+E	Lead	288	0	31	2
+E	Lead	128	0	29	74
+E	Lead	130	0	29	81
+E	Lead	132	0	29	83
+E	Lead	134	0	29	85
+E	Lead	136	0	29	83
+E	Lead	140	0	29	255
+E	Lead	142	0	29	81
+E	Lead	144	0	29	83
+E	Lead	146	0	29	85
+E	Lead	150	0	29	88
+E	Lead	152	0	29	85
+E	Lead	157	0	29	255
+E	Lead	160	0	29	90
+E	Lead	162	0	29	88
+E	Lead	164	0	29	85
+E	Lead	167	0	29	255
+E	Lead	168	0	29	83
+E	Lead	170	0	29	85
+E	Lead	172	0	29	88
+E	Lead	174	0	29	85
+E	Lead	178	0	29	83
+E	Lead	180	0	29	74
+E	Lead	189	0	29	255
+E	Lead	192	0	29	74
+E	Lead	194	0	29	81
+E	Lead	196	0	29	83
+E	Lead	198	0	29	85
+E	Lead	200	0	29	83
+E	Lead	204	0	29	255
+E	Lead	206	0	29	81
+E	Lead	208	0	29	83
+E	Lead	210	0	29	85
+E	Lead	214	0	29	88
+E	Lead	216	0	29	85
+E	Lead	221	0	29	255
+E	Lead	224	0	29	90
+E	Lead	226	0	29	88
+E	Lead	228	0	29	85
+E	Lead	231	0	29	255
+E	Lead	232	0	29	83
+E	Lead	234	0	29	85
+E	Lead	236	0	29	88
+E	Lead	238	0	29	85
+E	Lead	242	0	29	83
+E	Lead	244	0	29	74
+E	Lead	253	0	29	255
+E	Lead	256	0	29	74
+E	Lead	258	0	29	81
+E	Lead	260	0	29	83
+E	Lead	262	0	29	85
+E	Lead	264	0	29	83
+E	Lead	268	0	29	255
+E	Lead	270	0	29	81
+E	Lead	272	0	29	83
+E	Lead	274	0	29	85
+E	Lead	278	0	29	88
+E	Lead	280	0	29	85
+E	Lead	285	0	29	255
+E	Lead	288	0	29	90
+E	Lead	290	0	29	88
+E	Lead	292	0	29	85
+E	Lead	295	0	29	255
+E	Lead	296	0	29	83
+E	Lead	298	0	29	85
+E	Lead	300	0	29	88
+E	Lead	302	0	29	85
+E	Lead	306	0	29	83
+E	Lead	308	0	29	74
+E	Lead	317	0	29	255
+M	Choir	0.29
+P	Choir	We are the voices in the machine.
+G	Choir	5	2
+G	Choir	6	5
+G	Choir	7	15
+G	Choir	8	10
+G	Choir	9	14
+G	Choir	10	30
+G	Choir	13	3
+G	Choir	15	1
+G	Choir	18	1
+G	Choir	3	0
+G	Choir	19	50
+G	Choir	16	15
+E	Choir	192	0	29	58
+E	Choir	208	0	29	58
+E	Choir	224	0	29	56
+E	Choir	240	0	29	56
+E	Choir	256	0	29	58
+E	Choir	272	0	29	58
+E	Choir	288	0	29	56
+E	Choir	304	0	29	56
+E	Choir	192	1	29	65
+E	Choir	204	1	29	255
+E	Choir	208	1	29	65
+E	Choir	220	1	29	255
+E	Choir	224	1	29	65
+E	Choir	236	1	29	255
+E	Choir	240	1	29	60
+E	Choir	252	1	29	255
+E	Choir	256	1	29	65
+E	Choir	268	1	29	255
+E	Choir	272	1	29	65
+E	Choir	284	1	29	255
+E	Choir	288	1	29	65
+E	Choir	300	1	29	255
+E	Choir	304	1	29	60
+E	Choir	316	1	29	255
+E	Choir	192	2	29	69
+E	Choir	204	2	29	255
+E	Choir	208	2	29	70
+E	Choir	220	2	29	255
+E	Choir	224	2	29	69
+E	Choir	236	2	29	255
+E	Choir	240	2	29	67
+E	Choir	252	2	29	255
+E	Choir	256	2	29	69
+E	Choir	268	2	29	255
+E	Choir	272	2	29	70
+E	Choir	284	2	29	255
+E	Choir	288	2	29	69
+E	Choir	300	2	29	255
+E	Choir	304	2	29	67
+E	Choir	316	2	29	255
+M	Scrub	0.33
+P	Scrub	Good [B AY1] from the machine.
+G	Scrub	5	1
+G	Scrub	6	5
+G	Scrub	7	15
+G	Scrub	8	10
+G	Scrub	9	14
+G	Scrub	10	30
+G	Scrub	13	4
+G	Scrub	16	60
+G	Scrub	19	80
+G	Scrub	12	25
+E	Scrub	320	0	29	58
+E	Scrub	380	0	29	255
+E	Scrub	320	1	29	69
+E	Scrub	380	1	29	255
+E	Scrub	320	0	35	0
+E	Scrub	321	0	35	17
+E	Scrub	322	0	35	34
+E	Scrub	323	0	35	51
+E	Scrub	324	0	35	68
+E	Scrub	325	0	35	85
+E	Scrub	326	0	35	102
+E	Scrub	327	0	35	119
+E	Scrub	328	0	35	136
+E	Scrub	329	0	35	153
+E	Scrub	330	0	35	169
+E	Scrub	331	0	35	186
+E	Scrub	332	0	35	203
+E	Scrub	333	0	35	220
+E	Scrub	334	0	35	237
+E	Scrub	335	0	35	254
+E	Scrub	336	0	35	271
+E	Scrub	337	0	35	288
+E	Scrub	338	0	35	305
+E	Scrub	339	0	35	322
+E	Scrub	340	0	35	339
+E	Scrub	341	0	35	356
+E	Scrub	342	0	35	373
+E	Scrub	343	0	35	390
+E	Scrub	344	0	35	407
+E	Scrub	345	0	35	424
+E	Scrub	346	0	35	441
+E	Scrub	347	0	35	458
+E	Scrub	348	0	35	475
+E	Scrub	349	0	35	492
+E	Scrub	350	0	35	508
+E	Scrub	351	0	35	525
+E	Scrub	352	0	35	542
+E	Scrub	353	0	35	559
+E	Scrub	354	0	35	576
+E	Scrub	355	0	35	593
+E	Scrub	356	0	35	610
+E	Scrub	357	0	35	627
+E	Scrub	358	0	35	644
+E	Scrub	359	0	35	661
+E	Scrub	360	0	35	678
+E	Scrub	361	0	35	695
+E	Scrub	362	0	35	712
+E	Scrub	363	0	35	729
+E	Scrub	364	0	35	746
+E	Scrub	365	0	35	763
+E	Scrub	366	0	35	780
+E	Scrub	367	0	35	797
+E	Scrub	368	0	35	814
+E	Scrub	369	0	35	831
+E	Scrub	370	0	35	847
+E	Scrub	371	0	35	864
+E	Scrub	372	0	35	881
+E	Scrub	373	0	35	898
+E	Scrub	374	0	35	915
+E	Scrub	375	0	35	932
+E	Scrub	376	0	35	949
+E	Scrub	377	0	35	966
+E	Scrub	378	0	35	983
+E	Scrub	379	0	35	1000
+E	Scrub	320	1	35	1000
+E	Scrub	321	1	35	983
+E	Scrub	322	1	35	966
+E	Scrub	323	1	35	949
+E	Scrub	324	1	35	932
+E	Scrub	325	1	35	915
+E	Scrub	326	1	35	898
+E	Scrub	327	1	35	881
+E	Scrub	328	1	35	864
+E	Scrub	329	1	35	847
+E	Scrub	330	1	35	831
+E	Scrub	331	1	35	814
+E	Scrub	332	1	35	797
+E	Scrub	333	1	35	780
+E	Scrub	334	1	35	763
+E	Scrub	335	1	35	746
+E	Scrub	336	1	35	729
+E	Scrub	337	1	35	712
+E	Scrub	338	1	35	695
+E	Scrub	339	1	35	678
+E	Scrub	340	1	35	661
+E	Scrub	341	1	35	644
+E	Scrub	342	1	35	627
+E	Scrub	343	1	35	610
+E	Scrub	344	1	35	593
+E	Scrub	345	1	35	576
+E	Scrub	346	1	35	559
+E	Scrub	347	1	35	542
+E	Scrub	348	1	35	525
+E	Scrub	349	1	35	508
+E	Scrub	350	1	35	492
+E	Scrub	351	1	35	475
+E	Scrub	352	1	35	458
+E	Scrub	353	1	35	441
+E	Scrub	354	1	35	424
+E	Scrub	355	1	35	407
+E	Scrub	356	1	35	390
+E	Scrub	357	1	35	373
+E	Scrub	358	1	35	356
+E	Scrub	359	1	35	339
+E	Scrub	360	1	35	322
+E	Scrub	361	1	35	305
+E	Scrub	362	1	35	288
+E	Scrub	363	1	35	271
+E	Scrub	364	1	35	254
+E	Scrub	365	1	35	237
+E	Scrub	366	1	35	220
+E	Scrub	367	1	35	203
+E	Scrub	368	1	35	186
+E	Scrub	369	1	35	169
+E	Scrub	370	1	35	153
+E	Scrub	371	1	35	136
+E	Scrub	372	1	35	119
+E	Scrub	373	1	35	102
+E	Scrub	374	1	35	85
+E	Scrub	375	1	35	68
+E	Scrub	376	1	35	51
+E	Scrub	377	1	35	34
+E	Scrub	378	1	35	17
+E	Scrub	379	1	35	0
