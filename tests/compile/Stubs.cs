@@ -53,7 +53,7 @@ namespace System.Windows
     public class FrameworkElement { public Thickness Margin { get; set; } public double MinWidth { get; set; } public double MinHeight { get; set; } public double MaxWidth { get; set; }
         public double Width { get; set; } public double Height { get; set; } public bool IsHitTestVisible { get; set; }
         public HorizontalAlignment HorizontalAlignment { get; set; } public VerticalAlignment VerticalAlignment { get; set; } public event RoutedEventHandler Loaded; public bool Focus() => true;
-        public event System.Windows.Input.MouseButtonEventHandler MouseLeftButtonDown, MouseLeftButtonUp;
+        public event System.Windows.Input.MouseButtonEventHandler MouseLeftButtonDown, MouseLeftButtonUp, MouseRightButtonDown;
         public event System.Windows.Input.MouseEventHandler MouseMove;
         public bool CaptureMouse() => true; public void ReleaseMouseCapture() { } }
     public class Style { }
@@ -72,7 +72,7 @@ namespace System.Windows.Threading
 namespace System.Windows.Input
 {
     public class MouseEventArgs : EventArgs { public System.Windows.Point GetPosition(System.Windows.FrameworkElement relativeTo) => default; }
-    public class MouseButtonEventArgs : MouseEventArgs { }
+    public class MouseButtonEventArgs : MouseEventArgs { public int ClickCount { get; set; } public bool Handled { get; set; } }
     public delegate void MouseEventHandler(object sender, MouseEventArgs e);
     public delegate void MouseButtonEventHandler(object sender, MouseButtonEventArgs e);
 }

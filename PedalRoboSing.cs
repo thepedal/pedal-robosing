@@ -32,7 +32,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "1.7.0";
+        internal const string Version = "1.8.0";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;

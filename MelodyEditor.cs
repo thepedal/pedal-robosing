@@ -8,6 +8,8 @@
 //   drag a block up or down        change its pitch
 //   drag a block left or right     change the silence before it
 //   drag a block's right edge      change its length
+//   double-click a block           cut it in two: the syllable is then sung over both notes
+//   right-click a block            join it back to the note before it
 // With a key set (root and scale), rows outside it are dimmed, blocks outside it
 // are tinted, and a block dragged up or down lands only on notes in the key.
 // A fixed strip on the left names the notes; a marker shows where the voice is
@@ -52,7 +54,7 @@ namespace PedalRoboSing
         double RowH => RowSizes[_zoom];
 
         // Drag state
-        int _drag = -1;
+        int _drag = -1, _dragNote;
         bool _resize;
         double _startX, _startY;
         int _startGap, _startLen, _startPitch;
@@ -74,6 +76,7 @@ namespace PedalRoboSing
             _canvas.MouseLeftButtonDown += OnDown;
             _canvas.MouseMove += OnMove;
             _canvas.MouseLeftButtonUp += OnUp;
+            _canvas.MouseRightButtonDown += OnRightDown;
             _gutter = new Canvas { Width = GutterW, Background = GutterBack, VerticalAlignment = VerticalAlignment.Top };
             _playhead = new Border { Width = 2, Background = PlayInk, IsHitTestVisible = false };
 
@@ -127,8 +130,16 @@ namespace PedalRoboSing
         int StartTick(int k)
         {
             int t = 0;
-            for (int i = 0; i < k; i++) t += _score.Gap[i] + _score.Len[i];
+            for (int i = 0; i < k; i++) t += _score.Gap[i] + _score.LenAt(i);
             return t + _score.Gap[k];
+        }
+
+        // Where note i of syllable k starts: its notes follow one another without a break
+        int NoteStart(int k, int i)
+        {
+            int t = StartTick(k);
+            for (int j = 0; j < i; j++) t += _score.NoteLen(k, j);
+            return t;
         }
 
         // ── Key ──────────────────────────────────────────────────────────────
@@ -156,8 +167,11 @@ namespace PedalRoboSing
             int moved = 0;
             for (int k = 0; k < _score.Count; k++)
             {
-                int p = NearestInKey(_score.Pitch[k], -1);
-                if (p != _score.Pitch[k]) { _score.Pitch[k] = p; moved++; }
+                for (int i = 0; i < _score.Notes(k); i++)
+                {
+                    int p = NearestInKey(_score.NotePitch(k, i), -1);
+                    if (p != _score.NotePitch(k, i)) { _score.SetNotePitch(k, i, p); moved++; }
+                }
             }
             if (moved > 0) { Redraw(); Changed?.Invoke(); }
             return moved;
@@ -166,21 +180,29 @@ namespace PedalRoboSing
         /// <summary>How many blocks of the shown line are outside the key.</summary>
         public int OutOfKey
         {
-            get { int n = 0; for (int k = 0; k < _score.Count; k++) if (!InKey(_score.Pitch[k])) n++; return n; }
+            get
+            {
+                int n = 0;
+                for (int k = 0; k < _score.Count; k++)
+                    for (int i = 0; i < _score.Notes(k); i++) if (!InKey(_score.NotePitch(k, i))) n++;
+                return n;
+            }
         }
 
         double RowY(int pitch) => (Range - Math.Clamp(pitch, -Range, Range)) * RowH;
 
-        int HitTest(double x, double y, out bool edge)
+        int HitTest(double x, double y, out int note, out bool edge)
         {
-            edge = false;
+            edge = false; note = 0;
             for (int k = _score.Count - 1; k >= 0; k--)
-            {
-                double x0 = StartTick(k) * PxTick, x1 = x0 + _score.Len[k] * PxTick, y0 = RowY(_score.Pitch[k]);
-                if (x < x0 || x > x1 || y < y0 || y > y0 + RowH) continue;
-                edge = x >= x1 - Math.Min(EdgeGrab, (x1 - x0) / 3);
-                return k;
-            }
+                for (int i = _score.Notes(k) - 1; i >= 0; i--)
+                {
+                    double x0 = NoteStart(k, i) * PxTick, x1 = x0 + _score.NoteLen(k, i) * PxTick, y0 = RowY(_score.NotePitch(k, i));
+                    if (x < x0 || x > x1 || y < y0 || y > y0 + RowH) continue;
+                    edge = x >= x1 - Math.Min(EdgeGrab, (x1 - x0) / 3);
+                    note = i;
+                    return k;
+                }
             return -1;
         }
 
@@ -188,11 +210,18 @@ namespace PedalRoboSing
         void OnDown(object sender, MouseButtonEventArgs e)
         {
             Point p = e.GetPosition(_canvas);
-            int k = HitTest(p.X, p.Y, out bool edge);
+            int k = HitTest(p.X, p.Y, out int note, out bool edge);
             if (k < 0) return;
-            _drag = k; _resize = edge;
+            if (e.ClickCount == 2)
+            {
+                // Cut the note where it was clicked; the two halves can then go to different pitches
+                int at = (int)Math.Round(p.X / PxTick) - NoteStart(k, note);
+                if (_score.Split(k, note, at)) { Redraw(); Changed?.Invoke(); }
+                return;
+            }
+            _drag = k; _dragNote = note; _resize = edge;
             _startX = p.X; _startY = p.Y;
-            _startGap = _score.Gap[k]; _startLen = _score.Len[k]; _startPitch = _score.Pitch[k];
+            _startGap = _score.Gap[k]; _startLen = _score.NoteLen(k, note); _startPitch = _score.NotePitch(k, note);
             _canvas.CaptureMouse();
             Redraw();
         }
@@ -203,17 +232,17 @@ namespace PedalRoboSing
             Point p = e.GetPosition(_canvas);
             int dTicks = (int)Math.Round((p.X - _startX) / PxTick);
             int dRows = (int)Math.Round((_startY - p.Y) / RowH);
-            int gap = _score.Gap[_drag], len = _score.Len[_drag], pitch = _score.Pitch[_drag];
+            int gap = _score.Gap[_drag], len = _score.NoteLen(_drag, _dragNote), pitch = _score.NotePitch(_drag, _dragNote);
             if (_resize)
                 len = Math.Clamp(_startLen + dTicks, 1, LineScore.MaxLen);
             else
             {
-                gap = Math.Clamp(_startGap + dTicks, 0, LineScore.MaxGap);
+                if (_dragNote == 0) gap = Math.Clamp(_startGap + dTicks, 0, LineScore.MaxGap);   // only a syllable's first note carries the silence
                 pitch = Math.Clamp(_startPitch + dRows, -Range, Range);
                 if (Snap && dRows != 0) pitch = NearestInKey(pitch, dRows);      // a sideways drag leaves the pitch alone
             }
-            if (gap == _score.Gap[_drag] && len == _score.Len[_drag] && pitch == _score.Pitch[_drag]) return;
-            _score.Gap[_drag] = gap; _score.Len[_drag] = len; _score.Pitch[_drag] = pitch;
+            if (gap == _score.Gap[_drag] && len == _score.NoteLen(_drag, _dragNote) && pitch == _score.NotePitch(_drag, _dragNote)) return;
+            _score.Gap[_drag] = gap; _score.SetNoteLen(_drag, _dragNote, len); _score.SetNotePitch(_drag, _dragNote, pitch);
             Redraw();
         }
 
@@ -224,6 +253,16 @@ namespace PedalRoboSing
             _canvas.ReleaseMouseCapture();
             Redraw();
             Changed?.Invoke();
+        }
+
+        void OnRightDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_drag >= 0) return;
+            Point p = e.GetPosition(_canvas);
+            int k = HitTest(p.X, p.Y, out int note, out _);
+            if (k < 0) return;
+            if (_score.Join(k, note)) { Redraw(); Changed?.Invoke(); }
+            e.Handled = true;
         }
 
         // ── Drawing ──────────────────────────────────────────────────────────
@@ -272,21 +311,31 @@ namespace PedalRoboSing
             }
 
             for (int k = 0; k < _score.Count; k++)
-            {
-                var label = new TextBlock
+                for (int i = 0; i < _score.Notes(k); i++)
                 {
-                    Text = k < _labels.Length ? _labels[k] : "?",
-                    FontSize = font, Foreground = LabelInk, IsHitTestVisible = false,
-                    Margin = new Thickness(3, -2, 0, 0),
-                };
-                Put(_canvas, new Border
-                {
-                    Width = Math.Max(4, _score.Len[k] * PxTick - 1), Height = RowH - 1,
-                    Background = k == _drag ? BlockDrag : InKey(_score.Pitch[k]) ? Block : BlockOut,
-                    BorderBrush = InKey(_score.Pitch[k]) ? BlockEdge : BlockOutEdge, BorderThickness = new Thickness(0, 0, 3, 0),
-                    CornerRadius = new CornerRadius(2), Child = label, IsHitTestVisible = false,
-                }, StartTick(k) * PxTick, RowY(_score.Pitch[k]) + 1);
-            }
+                    int pitch = _score.NotePitch(k, i), start = NoteStart(k, i);
+                    bool inKey = InKey(pitch);
+                    // A syllable's further notes carry a tie mark, and a line joins each to the note before it
+                    var label = new TextBlock
+                    {
+                        Text = i > 0 ? "~" : k < _labels.Length ? _labels[k] : "?",
+                        FontSize = font, Foreground = LabelInk, IsHitTestVisible = false,
+                        Margin = new Thickness(3, -2, 0, 0),
+                    };
+                    if (i > 0)
+                    {
+                        double ya = RowY(_score.NotePitch(k, i - 1)), yb = RowY(pitch);
+                        Put(_canvas, new Border { Width = 2, Height = Math.Abs(yb - ya) + RowH - 1, Background = BlockEdge, IsHitTestVisible = false },
+                            start * PxTick - 2, Math.Min(ya, yb) + 1);
+                    }
+                    Put(_canvas, new Border
+                    {
+                        Width = Math.Max(4, _score.NoteLen(k, i) * PxTick - 1), Height = RowH - 1,
+                        Background = k == _drag && i == _dragNote ? BlockDrag : inKey ? Block : BlockOut,
+                        BorderBrush = inKey ? BlockEdge : BlockOutEdge, BorderThickness = new Thickness(0, 0, 3, 0),
+                        CornerRadius = new CornerRadius(2), Child = label, IsHitTestVisible = false,
+                    }, start * PxTick, RowY(pitch) + 1);
+                }
 
             _playhead.Height = h;
             Put(_canvas, _playhead, _playTicks < 0 ? -10 : _playTicks * PxTick, 0);

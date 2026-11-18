@@ -83,6 +83,8 @@ namespace PedalRoboSing.Speech
         public bool MouthLive;
 
         public bool IsActive { get; private set; }
+        /// <summary>The note the voice is aiming at now, as a semitone number (before vibrato and portamento).</summary>
+        public float NoteNow => _noteMidi;
 
         // ── Playhead ─────────────────────────────────────────────────────────
         struct Req
@@ -311,9 +313,9 @@ namespace PedalRoboSing.Speech
         float Mel(int k)
         {
             if (_score == null) return _lineBase;
-            int p = _score.PitchAt(k);
-            return KeyLock ? ScaleSteps.Transpose(_lineBase, p, KeyRoot, KeyMask) : _lineBase + p;
+            return MelP(_score.PitchAt(k));
         }
+        float MelP(int p) => KeyLock ? ScaleSteps.Transpose(_lineBase, p, KeyRoot, KeyMask) : _lineBase + p;
 
         // Step j of the run is syllable K(j): the Word/Words window, forwards or backwards.
         int K(int j) => _lineRev ? _lineLast - j : _lineFirst + j;
@@ -369,7 +371,7 @@ namespace PedalRoboSing.Speech
             }
 
             _resting = false;
-            _noteMidi = Mel(k);
+            _noteMidi = _score == null ? _lineBase : MelP(_score.PitchAtTime(k, 0f, _lineRev));
             _vowelSeen = false;
             if (!LineHold && slot > natural) slot = -1f;          // short: the syllable at its own length, then silence
             SetSeg(_u.SylS[k], _u.SylH[k], _u.SylE[k], slot, Math.Max(0f, late));
@@ -429,6 +431,9 @@ namespace PedalRoboSing.Speech
                             if (_lineClock >= _lineWait) LineBeginSyllable(_lineClock - _lineWait, !_lineSettled);
                             break;
                         }
+                        // A syllable sung over several notes: the pitch moves on at each note's beat, the vowel holds
+                        if (_score != null && _lineStep < _lineCount && _score.HasMore(K(_lineStep)))
+                            _noteMidi = MelP(_score.PitchAtTime(K(_lineStep), (_lineClock - _lineNom) / Math.Max(1f, TickMs), _lineRev));
                     }
                     if (_phase == 0)
                     {

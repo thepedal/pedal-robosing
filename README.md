@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 1.7.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 1.8.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 The voice is original: a formant model converted to filter coefficients as it
 plays, with no speech ROM data and no code from any other synthesiser. Word
@@ -48,6 +48,11 @@ the middle row, which is the note you play.
 - Drag a block **up or down** to change its pitch (12 semitones either way).
 - Drag a block **sideways** to change the silence before it.
 - Drag a block's **right edge** to change its length.
+- **Double-click** a block to cut it in two where you click. The syllable is
+  then sung across both notes, holding its vowel while the pitch moves. Drag
+  the pieces to different pitches; cut again for more, up to 8 notes on one
+  syllable. The pieces carry a `~` and a line ties each to the one before.
+- **Right-click** a piece to join it back to the note before it.
 - **Sing line** plays the line under the caret with its melody, from the last
   note played on track 1. An orange marker shows where the voice is, both for
   Sing line and when the pattern plays that line.
@@ -297,6 +302,16 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 `midi_to_robosing.py` beside it.
 
 ## Changes
+
+**1.8.0**
+- A syllable can be sung over several notes. Double-click a block to cut it,
+  drag the pieces to their pitches, right-click to join them again. The vowel
+  holds while the pitch moves; Portamento sets how smoothly.
+- Melodies with such syllables are stored as `gap,len,pitch+len,pitch`. Songs
+  from earlier versions load unchanged.
+- Snap, Fit to key, the red marking and Key Lock apply to every note.
+- In the play modes that take only pitch from the melody, a syllable uses its
+  first note.
 
 **1.7.0**
 - Key Lock: the note that starts a line picks the scale degree to begin on and

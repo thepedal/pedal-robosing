@@ -40,7 +40,7 @@ namespace PedalRoboSing
 
         const string Intro =
             "One phrase per line (line 1 is Phrase 1). The grid shows the melody of the line under the caret: drag a block up or down for pitch, " +
-            "sideways for the silence before it, and its right edge for length. One note in the pattern with the line's Phrase number sings it; presets and parameters change how it sounds.";
+            "sideways for the silence before it, and its right edge for length. Double-click a block to sing its syllable over two notes. One note in the pattern with the line's Phrase number sings it; presets and parameters change how it sounds.";
 
         const string Help =
             "PHRASES\n" +
@@ -55,6 +55,8 @@ namespace PedalRoboSing
             "Each block is one syllable of the line under the caret.\n" +
             "Drag it up or down to change its pitch; the highlighted row is the note played in the pattern.\n" +
             "Drag it sideways to change the silence before it. Drag its right edge to change its length.\n" +
+            "Double-click a block to cut it in two where you click: the syllable is then sung across both notes, holding its vowel. Drag the pieces to different pitches, and cut again for more (up to 8).\n" +
+            "Right-click a piece to join it back to the note before it.\n" +
             "Sing line plays it from the last note played on track 1. The orange marker shows where the voice is.\n" +
             "Drag the bar between the text and the grid to resize them.\n\n" +
             "KEY\n" +

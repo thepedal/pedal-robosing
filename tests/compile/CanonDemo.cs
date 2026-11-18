@@ -209,6 +209,38 @@ static class CanonDemo
                 Console.WriteLine($"a new machine: root {k4.KeyRootNow} scale {k4.KeyScaleNow} lock {k4.KeyLock} (want 0 1 True)");
             }
 
+            // 9. A syllable over several notes
+            {
+                var s9 = LineScore.Parse("0,4,0+4,4+4,7 2,2,5", 2);
+                Console.WriteLine($"parse and write back: {s9.ToText()}   notes {s9.Notes(0)} {s9.Notes(1)}, syllable lengths {s9.LenAt(0)} {s9.LenAt(1)}, total {s9.TotalTicks} ticks (want 12 2, 16)");
+                var e9 = LineScore.Parse("0,8,0 0,2,3", 2);
+                e9.Split(0, 0, 3); e9.Split(0, 1, 2); e9.SetNotePitch(0, 1, 4); e9.SetNotePitch(0, 2, 7);
+                string cut = e9.ToText(); e9.Join(0, 1); string j1 = e9.ToText(); e9.Join(0, 0); string j2 = e9.ToText();
+                Console.WriteLine($"cut 8 at 3, then the rest at 2: {cut} | join the middle: {j1} | join again: {j2}");
+                Console.WriteLine("   want: 0,3,0+2,4+3,7 0,2,3 | 0,5,0+3,7 0,2,3 | 0,8,0 0,2,3");
+                Console.WriteLine($"an old reader sees a plain default for that syllable; a plain score still reads: {LineScore.Parse("0,2,0 1,3,-2", 2).ToText()}");
+
+                var u9 = Planner.Build("[AA]", SpeakMode.Speak);
+                foreach (bool rev in new[] { false, true })
+                {
+                    var v9 = new LpcVoice(1) { ChipRate = 16000, FrameMs = 15, TickMs = 119.05f, Speed = 1f };
+                    v9.StartLine(u9, LineScore.Parse("0,4,0+4,4+4,7", 1), 0, 0, rev, 48f, 1f);
+                    var o9 = new List<float>(); var notes9 = new List<string>(); int t9 = (int)(119.05f * 16);
+                    for (int i = 0; i < 16000 * 4 && v9.IsActive; i++)
+                    {
+                        o9.Add(v9.Next());
+                        if (i == 2 * t9 || i == 6 * t9 || i == 10 * t9) notes9.Add(v9.NoteNow.ToString("0"));
+                    }
+                    var a9 = o9.ToArray();
+                    Console.WriteLine($"one syllable over 0 +4 +7, {(rev ? "backwards" : "forwards ")}: note at ticks 2 6 10 = {string.Join(" ", notes9)}, level in each {Rms(a9, t9, 3 * t9):0.00} {Rms(a9, 5 * t9, 7 * t9):0.00} {Rms(a9, 9 * t9, 11 * t9):0.00}, length {a9.Length / (double)t9:0.0} ticks");
+                }
+                Console.WriteLine("   want 48 52 55 forwards, 55 52 48 backwards, sound in all three, about 12 ticks");
+                var ed9 = new MelodyEditor { BaseNote = 48, KeyRoot = 0, KeyMask = 0xAB5 };
+                ed9.Load(new[] { "a" }, LineScore.Parse("0,4,0+4,3+4,6", 1), 4);
+                int out9 = ed9.OutOfKey; ed9.FitToKey();
+                Console.WriteLine($"key check sees every note: {out9} outside, fitted to {ed9.Score.ToText()}   (want 2, 0,4,0+4,2+4,5)");
+            }
+
             Console.WriteLine($"Line from the second word only: {n2 / (119.05 * 16):0.0} ticks (want about 16)");
         }
     }
