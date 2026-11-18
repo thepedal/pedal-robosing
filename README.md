@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 1.5.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 1.6.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 The voice is original: a formant model converted to filter coefficients as it
 plays, with no speech ROM data and no code from any other synthesiser. Word
@@ -74,6 +74,15 @@ Melodies are saved with the song. If you edit a line's words its blocks are
 kept in order; if the syllable count changes, blocks are added or dropped at
 the end. A melody belongs to the Speak text mode; in Spell modes Line uses the
 plain two-ticks melody.
+
+**The key (v1.6).** The **Key** bar above the grid sets the machine's own Root
+and Scale parameters. Rows outside the key are dark, the key's root notes are
+marked in the note strip, and blocks outside the key turn red. With **Snap**
+on, a block dragged up or down lands only on notes in the key. **Fit to key**
+moves every block of the line to the nearest note in the key. The melody is
+drawn from the note that starts the line, so what the grid shows is the key as
+it falls for that starting note (the highlighted row, the last note played on
+track 1). Chromatic turns the key off.
 
 **The line is what every preset performs (v1.5).** Line is the default Play
 Mode and every preset but the last keeps it, so loading a preset changes how
@@ -276,6 +285,14 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 `midi_to_robosing.py` beside it.
 
 ## Changes
+
+**1.6.0**
+- Key bar in the phrase editor: pick Root and Scale there (they are the
+  machine's own parameters, so the sliders move and the song saves them).
+- The grid shows the key: rows outside it are dark, its root notes are marked,
+  blocks outside it are red, and a line under the bar counts them.
+- Snap keeps a dragged block on notes in the key. Fit to key moves a whole
+  line onto it.
 
 **1.5.0**
 - The phrase editor is where a part is written, and everything else performs

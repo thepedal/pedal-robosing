@@ -23,8 +23,9 @@ namespace BuzzGUI.Interfaces
 {
     public interface IBuzz { bool Playing { get; } }
     public interface IMachineGraph { IBuzz Buzz { get; } }
-    public interface IMachine { IMachineGraph Graph { get; } }
-    public interface IParameter { string Name { get; } }
+    public interface IMachine { IMachineGraph Graph { get; } System.Collections.ObjectModel.ReadOnlyCollection<IParameterGroup> ParameterGroups { get; } }
+    public interface IParameterGroup { System.Collections.ObjectModel.ReadOnlyCollection<IParameter> Parameters { get; } }
+    public interface IParameter { string Name { get; } void SetValue(int track, int value); }
     public interface IMenuItem { }
 }
 namespace BuzzGUI.Common
@@ -83,6 +84,12 @@ namespace System.Windows.Media
     public class Brush { }
     public static class Brushes { public static Brush DimGray => null; public static Brush Gray => null; }
 }
+namespace System.Windows.Controls.Primitives
+{
+    public enum PlacementMode { Bottom, Top }
+    public class Popup : System.Windows.FrameworkElement { public System.Windows.FrameworkElement PlacementTarget { get; set; } public PlacementMode Placement { get; set; }
+        public bool StaysOpen { get; set; } public bool IsOpen { get; set; } public System.Windows.FrameworkElement Child { get; set; } }
+}
 namespace System.Windows.Controls
 {
     using System.Windows.Media;
@@ -100,7 +107,7 @@ namespace System.Windows.Controls
     public class Canvas : Panel { public static void SetLeft(FrameworkElement e, double v) { } public static void SetTop(FrameworkElement e, double v) { } }
     public class ScrollViewer : FrameworkElement { public object Content { get; set; } public ScrollBarVisibility HorizontalScrollBarVisibility { get; set; }
         public ScrollBarVisibility VerticalScrollBarVisibility { get; set; } }
-    public class Border : FrameworkElement { public Brush Background { get; set; } public Brush BorderBrush { get; set; } public Thickness BorderThickness { get; set; }
+    public class Border : FrameworkElement { public Thickness Padding { get; set; } public Brush Background { get; set; } public Brush BorderBrush { get; set; } public Thickness BorderThickness { get; set; }
         public CornerRadius CornerRadius { get; set; } public FrameworkElement Child { get; set; } }
     public class DockPanel : Panel { public static void SetDock(FrameworkElement e, Dock d) { } }
     public class StackPanel : Panel { public Orientation Orientation { get; set; } }

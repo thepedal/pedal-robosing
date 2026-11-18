@@ -12,10 +12,16 @@ using PedalRoboSing.Speech;
 
 class Host : IBuzzMachineHost
 {
-    public IMachine Machine => null;
+    public IMachine Machine { get; set; }
     public MasterInfo MasterInfo { get; } = new MasterInfo { SamplesPerSec = 44100 };
 }
-class P : IParameter { public string Name { get; set; } }
+class P : IParameter { public string Name { get; set; } public int Last = -1; public void SetValue(int track, int value) { Last = value; } }
+class PG : IParameterGroup { public System.Collections.ObjectModel.ReadOnlyCollection<IParameter> Parameters { get; set; } }
+class FakeMachine : IMachine
+{
+    public IMachineGraph Graph => null;
+    public System.Collections.ObjectModel.ReadOnlyCollection<IParameterGroup> ParameterGroups { get; set; }
+}
 
 static class Smoke
 {

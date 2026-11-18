@@ -153,6 +153,29 @@ static class CanonDemo
             var w = new LpcVoice(1) { ChipRate = 16000, FrameMs = 15, TickMs = 119.05f, Speed = 1f };
             w.StartLine(u, sc, 1, 2, false, 48f, 1f);
             int n2 = 0; while (n2 < 16000 * 4 && w.IsActive) { w.Next(); n2++; }
+            // 6. The key in the editor
+            var ed = new MelodyEditor { BaseNote = 48, KeyRoot = 0, KeyMask = 0xAB5 };          // C major, line started on C
+            ed.Load(new[] { "a", "b", "c", "d", "e", "f" }, LineScore.Parse("0,2,1 0,2,3 0,2,6 0,2,8 0,2,10 0,2,7", 6), 4);
+            int before = ed.OutOfKey, moved = ed.FitToKey();
+            Console.WriteLine($"C major from C, pitches 1 3 6 8 10 7: {before} outside; Fit to key moved {moved} -> {string.Join(" ", ed.Score.Pitch)}   (want 0 2 5 7 9 7)");
+            ed = new MelodyEditor { BaseNote = 52, KeyRoot = 0, KeyMask = 0xAB5 };              // same key, line started on E
+            ed.Load(new[] { "a", "b", "c" }, LineScore.Parse("0,2,0 0,2,2 0,2,4", 3), 4);
+            ed.FitToKey();
+            Console.WriteLine($"C major from E, pitches 0 2 4: -> {string.Join(" ", ed.Score.Pitch)}   (want 0 1 3: E F G)");
+            ed = new MelodyEditor { BaseNote = 48, KeyRoot = 0, KeyMask = 0xFFF };
+            ed.Load(new[] { "a" }, LineScore.Parse("0,2,1", 1), 4);
+            Console.WriteLine($"Chromatic: outside the key {ed.OutOfKey}, Fit moved {ed.FitToKey()}");
+
+            // 7. Root and Scale set from the editor go through the host's parameters
+            var pr = new P { Name = "Root" }; var ps = new P { Name = "Scale" };
+            var g1 = new PG { Parameters = new System.Collections.ObjectModel.ReadOnlyCollection<BuzzGUI.Interfaces.IParameter>(new BuzzGUI.Interfaces.IParameter[] { pr, ps }) };
+            var g0 = new PG { Parameters = new System.Collections.ObjectModel.ReadOnlyCollection<BuzzGUI.Interfaces.IParameter>(new BuzzGUI.Interfaces.IParameter[0]) };
+            var hh = new Host { Machine = new FakeMachine { ParameterGroups = new System.Collections.ObjectModel.ReadOnlyCollection<BuzzGUI.Interfaces.IParameterGroup>(new BuzzGUI.Interfaces.IParameterGroup[] { g0, g1 }) } };
+            var mm = new PedalRoboSingMachine(hh);
+            mm.SetGlobal("Root", 9); mm.SetGlobal("Scale", 2);
+            var bare = new PedalRoboSingMachine(new Host()); bare.SetGlobal("Scale", 2);
+            Console.WriteLine($"SetGlobal: host parameters received Root {pr.Last}, Scale {ps.Last}; with no host parameters the property is set: Scale {bare.Scale}, mask 0x{bare.KeyMask:X}");
+
             Console.WriteLine($"Line from the second word only: {n2 / (119.05 * 16):0.0} ticks (want about 16)");
         }
     }

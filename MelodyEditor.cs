@@ -8,6 +8,8 @@
 //   drag a block up or down        change its pitch
 //   drag a block left or right     change the silence before it
 //   drag a block's right edge      change its length
+// With a key set (root and scale), rows outside it are dimmed, blocks outside it
+// are tinted, and a block dragged up or down lands only on notes in the key.
 // A fixed strip on the left names the notes; a marker shows where the voice is
 // while the line sings. Built from plain WPF elements in code (no XAML).
 
@@ -35,6 +37,11 @@ namespace PedalRoboSing
         /// <summary>Semitone number of the note the line starts on (C-0 = 0), for the note names. -1 = unknown.</summary>
         public int BaseNote = -1;
 
+        /// <summary>The key: root as a pitch class (C = 0) and a 12-bit mask, bit n = semitone n above the root. 0xFFF = no key.</summary>
+        public int KeyRoot, KeyMask = 0xFFF;
+        /// <summary>Dragging a block up or down lands only on notes in the key.</summary>
+        public bool Snap = true;
+
         readonly Canvas _canvas, _gutter;
         readonly Border _playhead;
         string[] _labels = Array.Empty<string>();
@@ -56,6 +63,8 @@ namespace PedalRoboSing
         static readonly Brush Block = Rgb(0x4F, 0x9D, 0xD9), BlockEdge = Rgb(0xC8, 0xE4, 0xFA), BlockDrag = Rgb(0xF0, 0xA0, 0x40);
         static readonly Brush LabelInk = Rgb(0x08, 0x08, 0x08), GutterInk = Rgb(0xB0, 0xB0, 0xB0), GutterRoot = Rgb(0xFF, 0xFF, 0xFF);
         static readonly Brush GutterBack = Rgb(0x22, 0x22, 0x22), PlayInk = Rgb(0xFF, 0xB0, 0x30);
+        static readonly Brush OutRow = Rgb(0x21, 0x21, 0x21), GutterOut = Rgb(0x6A, 0x6A, 0x6A), GutterKey = Rgb(0x8C, 0xC8, 0xF4);
+        static readonly Brush BlockOut = Rgb(0xC0, 0x78, 0x78), BlockOutEdge = Rgb(0xF4, 0xC8, 0xC8);
 
         public MelodyEditor()
         {
@@ -122,6 +131,44 @@ namespace PedalRoboSing
             return t + _score.Gap[k];
         }
 
+        // ── Key ──────────────────────────────────────────────────────────────
+        bool HasKey => BaseNote >= 0 && (KeyMask & 0xFFF) != 0xFFF && (KeyMask & 0xFFF) != 0;
+
+        bool InKey(int pitch) => !HasKey || ((KeyMask >> ((((BaseNote + pitch - KeyRoot) % 12) + 12) % 12)) & 1) != 0;
+
+        // The closest pitch in the key; when two are equally close, the one in the direction of travel
+        int NearestInKey(int pitch, int direction)
+        {
+            if (InKey(pitch)) return pitch;
+            int sign = direction < 0 ? -1 : 1;
+            for (int d = 1; d < 12; d++)
+            {
+                int a = pitch + sign * d, b = pitch - sign * d;
+                if (a >= -Range && a <= Range && InKey(a)) return a;
+                if (b >= -Range && b <= Range && InKey(b)) return b;
+            }
+            return pitch;
+        }
+
+        /// <summary>Move every block that is outside the key to the nearest note in it. Returns how many moved.</summary>
+        public int FitToKey()
+        {
+            int moved = 0;
+            for (int k = 0; k < _score.Count; k++)
+            {
+                int p = NearestInKey(_score.Pitch[k], -1);
+                if (p != _score.Pitch[k]) { _score.Pitch[k] = p; moved++; }
+            }
+            if (moved > 0) { Redraw(); Changed?.Invoke(); }
+            return moved;
+        }
+
+        /// <summary>How many blocks of the shown line are outside the key.</summary>
+        public int OutOfKey
+        {
+            get { int n = 0; for (int k = 0; k < _score.Count; k++) if (!InKey(_score.Pitch[k])) n++; return n; }
+        }
+
         double RowY(int pitch) => (Range - Math.Clamp(pitch, -Range, Range)) * RowH;
 
         int HitTest(double x, double y, out bool edge)
@@ -163,6 +210,7 @@ namespace PedalRoboSing
             {
                 gap = Math.Clamp(_startGap + dTicks, 0, LineScore.MaxGap);
                 pitch = Math.Clamp(_startPitch + dRows, -Range, Range);
+                if (Snap && dRows != 0) pitch = NearestInKey(pitch, dRows);      // a sideways drag leaves the pitch alone
             }
             if (gap == _score.Gap[_drag] && len == _score.Len[_drag] && pitch == _score.Pitch[_drag]) return;
             _score.Gap[_drag] = gap; _score.Len[_drag] = len; _score.Pitch[_drag] = pitch;
@@ -200,15 +248,21 @@ namespace PedalRoboSing
                 int note = BaseNote >= 0 ? BaseNote + pitch : -1;
                 int pc = BaseNote >= 0 ? ((note % 12) + 12) % 12 : -1;
                 bool sharp = pc == 1 || pc == 3 || pc == 6 || pc == 8 || pc == 10;
-                if (pitch == 0 || sharp)
-                    Put(_canvas, new Border { Width = w, Height = RowH, Background = pitch == 0 ? RootRow : SharpRow, IsHitTestVisible = false }, 0, r * RowH);
+                bool key = HasKey, inKey = InKey(pitch), keyRoot = key && pc == KeyRoot;
+                // With a key: rows outside it are dark. Without one: the sharps, piano-roll style.
+                bool dim = key ? !inKey : sharp;
+                if (pitch == 0 || dim)
+                    Put(_canvas, new Border { Width = w, Height = RowH, Background = pitch == 0 ? RootRow : key ? OutRow : SharpRow, IsHitTestVisible = false }, 0, r * RowH);
+                if (keyRoot)
+                    Put(_gutter, new Border { Width = 3, Height = RowH - 1, Background = GutterKey, IsHitTestVisible = false }, 0, r * RowH + 1);
                 Put(_canvas, new Border { Width = w, Height = 1, Background = RowLine, IsHitTestVisible = false }, 0, r * RowH);
 
                 string name = note >= 0 && note < 120 ? NoteNames[pc] + (note / 12)
                             : pitch == 0 ? "0" : (pitch > 0 ? "+" + pitch : pitch.ToString());
                 Put(_gutter, new TextBlock
                 {
-                    Text = name, FontSize = font, Foreground = pitch == 0 ? GutterRoot : GutterInk, IsHitTestVisible = false,
+                    Text = name, FontSize = font, IsHitTestVisible = false,
+                    Foreground = pitch == 0 ? GutterRoot : keyRoot ? GutterKey : key && !inKey ? GutterOut : GutterInk,
                 }, 5, r * RowH - 1);
             }
             for (int t = 0; t <= total; t += _ticksPerBeat)
@@ -228,8 +282,8 @@ namespace PedalRoboSing
                 Put(_canvas, new Border
                 {
                     Width = Math.Max(4, _score.Len[k] * PxTick - 1), Height = RowH - 1,
-                    Background = k == _drag ? BlockDrag : Block,
-                    BorderBrush = BlockEdge, BorderThickness = new Thickness(0, 0, 3, 0),
+                    Background = k == _drag ? BlockDrag : InKey(_score.Pitch[k]) ? Block : BlockOut,
+                    BorderBrush = InKey(_score.Pitch[k]) ? BlockEdge : BlockOutEdge, BorderThickness = new Thickness(0, 0, 3, 0),
                     CornerRadius = new CornerRadius(2), Child = label, IsHitTestVisible = false,
                 }, StartTick(k) * PxTick, RowY(_score.Pitch[k]) + 1);
             }

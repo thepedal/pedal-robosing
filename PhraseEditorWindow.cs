@@ -32,6 +32,10 @@ namespace PedalRoboSing
         string _shownPhonetic;
 
         System.Windows.Threading.DispatcherTimer _timer;
+        Button _rootBtn, _scaleBtn, _snapBtn;
+        TextBlock _keyNote;
+        static bool _snap = true;                  // remembered while ReBuzz runs
+        int _keyRoot = -1, _keyScale = -1, _keyBase = -2;
 
         const string Intro =
             "One phrase per line (line 1 is Phrase 1). The grid shows the melody of the line under the caret: drag a block up or down for pitch, " +
@@ -52,6 +56,10 @@ namespace PedalRoboSing
             "Drag it sideways to change the silence before it. Drag its right edge to change its length.\n" +
             "Sing line plays it from the last note played on track 1. The orange marker shows where the voice is.\n" +
             "Drag the bar between the text and the grid to resize them.\n\n" +
+            "KEY\n" +
+            "Key sets the machine's Root and Scale. Rows outside the key are dark and blocks outside it are red.\n" +
+            "With Snap on, a block dragged up or down lands only on notes in the key. Fit to key moves every block of the line to the nearest note in it.\n" +
+            "The melody is drawn from the note that starts the line, so it is in key for that starting note (the highlighted row). Chromatic turns the key off.\n\n" +
             "IN THE PATTERN\n" +
             "One note with the line's Phrase number sings the whole line; the note sets the key. Every preset sings what is drawn here and only changes the sound.\n" +
             "Word and Words sing part of the line. Hold off makes the syllables short. Scan below 64 sings the line backwards.\n" +
@@ -98,6 +106,7 @@ namespace PedalRoboSing
             grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star), MinHeight = 48 });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(3, GridUnitType.Star), MinHeight = 80 });
 
             _box = new TextBox
@@ -138,7 +147,24 @@ namespace PedalRoboSing
             Grid.SetRow(splitter, 2);
             grid.Children.Add(splitter);
 
-            Grid.SetRow(_melody.View, 3);
+            // The key: the machine's own Root and Scale parameters, set from here
+            var keyBar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 6) };
+            keyBar.Children.Add(new TextBlock { Text = "Key", Foreground = Theme.DimInk, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 2, 0) });
+            _rootBtn = Theme.MakeButton("", (s, e) => Theme.ShowChoices(_rootBtn, PedalRoboSingMachine.RootNames, _m.Root,
+                i => { _m.SetGlobal("Root", i); SyncKey(); }), 52);
+            _scaleBtn = Theme.MakeButton("", (s, e) => Theme.ShowChoices(_scaleBtn, PedalRoboSingMachine.ScaleNames, _m.Scale,
+                i => { _m.SetGlobal("Scale", i); SyncKey(); }), 150);
+            _snapBtn = Theme.MakeButton("", (s, e) => { _snap = !_snap; _keyRoot = -1; SyncKey(); }, 84);
+            keyBar.Children.Add(_rootBtn);
+            keyBar.Children.Add(_scaleBtn);
+            keyBar.Children.Add(_snapBtn);
+            keyBar.Children.Add(Theme.MakeButton("Fit to key", (s, e) => { _melody.FitToKey(); _keyRoot = -1; SyncKey(); }, 84));
+            _keyNote = new TextBlock { Foreground = Theme.DimInk, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), FontSize = 11.5 };
+            keyBar.Children.Add(_keyNote);
+            Grid.SetRow(keyBar, 3);
+            grid.Children.Add(keyBar);
+
+            Grid.SetRow(_melody.View, 4);
             grid.Children.Add(_melody.View);
             root.Children.Add(grid);                   // last child fills the remaining space
 
@@ -147,6 +173,7 @@ namespace PedalRoboSing
                 if (_shownLine < 0) return;
                 while (_scores.Count <= _shownLine) _scores.Add("");
                 _scores[_shownLine] = _melody.Score.IsDefault ? "" : _melody.Score.ToText();
+                _keyRoot = -1; SyncKey();              // the count of notes outside the key may have changed
             };
             _scores.AddRange(machine.GetScores());
 
@@ -158,8 +185,7 @@ namespace PedalRoboSing
             _timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
             _timer.Tick += (s, e) =>
             {
-                int note = _m.LastNoteNumber;
-                if (note != _melody.BaseNote) { _melody.BaseNote = note; _melody.Redraw(); }
+                SyncKey();                             // follows the played note, and Root/Scale changed anywhere else
                 _melody.SetPlayhead(_m.LineProgress(_shownPhonetic));
             };
             _timer.Start();
@@ -167,6 +193,29 @@ namespace PedalRoboSing
 
             Content = root;
             Loaded += (s, e) => { _box.Focus(); UpdatePreview(); };
+        }
+
+        static readonly string[] Octaved = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
+
+        // Bring the grid and the key bar in line with the machine: its Root and Scale, and the last note played
+        void SyncKey()
+        {
+            int root = _m.Root, scale = _m.Scale, note = _m.LastNoteNumber;
+            if (root == _keyRoot && scale == _keyScale && note == _keyBase) return;
+            _keyRoot = root; _keyScale = scale; _keyBase = note;
+            _melody.BaseNote = note;
+            _melody.KeyRoot = root; _melody.KeyMask = _m.KeyMask; _melody.Snap = _snap;
+            _melody.Redraw();
+
+            var roots = PedalRoboSingMachine.RootNames; var scales = PedalRoboSingMachine.ScaleNames;
+            _rootBtn.Content = roots[Math.Clamp(root, 0, roots.Length - 1)] + " \u25BE";
+            _scaleBtn.Content = scales[Math.Clamp(scale, 0, scales.Length - 1)] + " \u25BE";
+            _snapBtn.Content = _snap ? "Snap: On" : "Snap: Off";
+            int outside = _melody.OutOfKey;
+            string from = note >= 0 && note < 120 ? Octaved[note % 12] + (note / 12) : "?";
+            _keyNote.Text = scale == 0 ? "Chromatic: every note is allowed."
+                          : (outside == 0 ? "All notes in key" : outside == 1 ? "1 note outside the key" : outside + " notes outside the key")
+                            + $", for a line started on {from}.";
         }
 
         // Line under the caret, worked out from the text so it doesn't depend on layout
@@ -238,6 +287,7 @@ namespace PedalRoboSing
             _melody.BaseNote = _m.LastNoteNumber;
             while (_scores.Count <= idx) _scores.Add("");
             _melody.Load(u.SylText, LineScore.Parse(_scores[idx], u.SylS.Length), _m.TicksPerBeat);
+            _keyRoot = -1; SyncKey();
         }
 
         void SingLine()

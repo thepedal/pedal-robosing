@@ -32,7 +32,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "1.5.0";
+        internal const string Version = "1.6.0";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;
@@ -59,6 +59,35 @@ namespace PedalRoboSing
             Mask(0, 7),                              // Fifths
             Mask(0),                                 // Octaves
         };
+        internal static readonly string[] ScaleNames =
+        {
+            "Chromatic", "Major", "Minor", "Dorian", "Mixolydian", "Harmonic Minor", "Major Pentatonic",
+            "Minor Pentatonic", "Whole Tone", "Major Triad", "Minor Triad", "Major 7", "Minor 7", "Fifths", "Octaves",
+        };
+        internal static string[] RootNames => NoteNames;
+
+        /// <summary>The current scale as a 12-bit mask, bit n = semitone n above Root.</summary>
+        public int KeyMask => ScaleMasks[Math.Clamp(Scale, 0, ScaleMasks.Length - 1)];
+
+        /// <summary>Set one of this machine's own global parameters the way the host does, so the
+        /// slider moves and the value is saved with the song (writing the property alone is lost on save).</summary>
+        public void SetGlobal(string name, int value)
+        {
+            try
+            {
+                var groups = host?.Machine?.ParameterGroups;
+                if (groups != null && groups.Count > 1)
+                    foreach (var p in groups[1].Parameters)
+                        if (p?.Name == name) { p.SetValue(0, value); return; }
+            }
+            catch { }
+            switch (name)                                   // no host parameter found: at least act on it
+            {
+                case "Root": Root = Math.Clamp(value, 0, 11); break;
+                case "Scale": Scale = Math.Clamp(value, 0, ScaleMasks.Length - 1); break;
+            }
+        }
+
         static int Mask(params int[] semis) { int m = 0; foreach (int x in semis) m |= 1 << x; return m; }
 
         readonly IBuzzMachineHost host;

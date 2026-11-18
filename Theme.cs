@@ -88,6 +88,27 @@ namespace PedalRoboSing
             "</Trigger></Style.Triggers></Style>" +
             "</ResourceDictionary>";
 
+        /// <summary>A dark drop-down list under a button: click an entry to choose it, click elsewhere to dismiss.</summary>
+        public static void ShowChoices(Button anchor, string[] items, int current, Action<int> pick)
+        {
+            var list = new StackPanel();
+            var pop = new System.Windows.Controls.Primitives.Popup
+            {
+                PlacementTarget = anchor,
+                Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom,
+                StaysOpen = false,
+                Child = new Border { Background = WinBack, BorderBrush = Edge, BorderThickness = new Thickness(1), Padding = new Thickness(2), Child = list },
+            };
+            for (int i = 0; i < items.Length; i++)
+            {
+                int index = i;
+                var b = MakeButton((i == current ? "\u2022 " : "   ") + items[i], (s, e) => { pop.IsOpen = false; pick(index); }, 150, 0);
+                b.Margin = new Thickness(0, 1, 0, 1);
+                list.Children.Add(b);
+            }
+            pop.IsOpen = true;
+        }
+
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
         static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
