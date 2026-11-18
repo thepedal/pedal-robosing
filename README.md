@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 1.4.4 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 1.5.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 The voice is original: a formant model converted to filter coefficients as it
 plays, with no speech ROM data and no code from any other synthesiser. Word
@@ -59,7 +59,7 @@ the middle row, which is the note you play.
   cut is a guess from the spelling; where it can't tell, the whole word sits on
   the first block and the rest show a dash.
 
-In the pattern, set Play Mode to Line (or load the Line Singer preset) and put
+In the pattern, put
 one note on the row where the line starts, with its Phrase number. The note
 sets the key; the line sings itself and ends with its last consonant, so no
 note-off is needed. A new note restarts it. A line with no melody drawn sings
@@ -73,7 +73,20 @@ its note, so its vowel is late by its consonants unless you give it a gap.
 Melodies are saved with the song. If you edit a line's words its blocks are
 kept in order; if the syllable count changes, blocks are added or dropped at
 the end. A melody belongs to the Speak text mode; in Spell modes Line uses the
-plain two-ticks melody. Word and Words are ignored in Line mode.
+plain two-ticks melody.
+
+**The line is what every preset performs (v1.5).** Line is the default Play
+Mode and every preset but the last keeps it, so loading a preset changes how
+the line sounds and never whether it plays. In Line mode:
+
+- **Word** and **Words** sing part of the line, starting at once.
+- **Hold** off sings each syllable short, leaving the rest of its block silent.
+- **Scan** below 64 sings the line backwards: last syllable first, each one
+  still sung forwards, with the lengths and silences mirrored.
+
+If you choose another Play Mode by hand (or load *By Hand Syllables*), the
+pattern sets the timing and the melody still sets each syllable's pitch,
+transposed by the note you play. A line with no melody drawn behaves as before.
 
 In Syllable and Phoneme modes the step counter wraps round the Word/Words
 window, restarts when Phrase, Word or Words is written, and can be set for a
@@ -150,8 +163,8 @@ track 1's mouth and only supply pitch, so a chord speaks as one voice.
 | Speaker | 0–127 | 30 | Small-speaker voicing and image filtering. 0 is raw. |
 | Note Off | Ignore / Cut | Ignore | Cut makes note-off a fast fade in every mode. With Ignore, note-off still releases a held syllable (it finishes its consonants) and stops Scrub and shared-mouth voices. |
 | Breath | 0–127 | 0 | Adds noise to voiced sounds. |
-| Play Mode | see above | Syllable | |
-| Hold | Off / On | On | Syllable/Phoneme: sustain while the note is held. Off plays each step once at its natural length. |
+| Play Mode | see above | Line | |
+| Hold | Off / On | On | Line: vowels fill their blocks; Off sings each syllable short, with silence after it. Syllable/Phoneme: sustain while the note is held. |
 | Sync Step | 1–32 ticks | 2 | Sync: ticks per syllable. |
 | Glide | 0–127 | 15 | How slowly the mouth moves to a new shape (off, or 2 ms to 1 s). |
 | Scan | 0–127 | 64 | Scrub: automatic travel, -2x to +2x speaking pace. 64 is still. |
@@ -185,11 +198,11 @@ track 1's mouth and only supply pitch, so a chord speaks as one voice.
 
 ## Presets
 
-`Pedal RoboSing.prs.xml` loads automatically: Syllable Singer, Overtone Singer,
-Scale Bells, Chant in Time, Choir One Mouth, Tuned Percussion, Scrub Pad,
-Backwards Loop, Speech Melody, Whisper Hiss, Chip Talker, Chip Syllables,
+`Pedal RoboSing.prs.xml` loads automatically: Simple Singer, Overtone Singer,
+Scale Bells, Chant in Time, Choir One Mouth, Tuned Percussion, Smear Pad,
+Backwards Line, Speech Melody, Whisper Hiss, Chip Talker, Chip Singer,
 Spelling Bee, Broken Batteries, Giant Drone, Tiny Robot, Reactive Singer, Open
-Vowels Ring, Rubber Mouth, Hard Edges, Rhyme Spotlight, Tongue Twister and Line Singer. They set the globals
+Vowels Ring, Rubber Mouth, Hard Edges, Rhyme Spotlight, Tongue Twister and By Hand Syllables. All but the last sing the line drawn in the phrase editor. They set the globals
 only. `gen_presets.py --check` verifies the bundle against the source.
 
 ## How it works
@@ -263,6 +276,21 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 `midi_to_robosing.py` beside it.
 
 ## Changes
+
+**1.5.0**
+- The phrase editor is where a part is written, and everything else performs
+  it. Play Mode defaults to Line, and 22 of the 23 presets keep it: one note
+  with a Phrase number sings the drawn line in any of them.
+- Presets reworked to sing the line: Chant in Time, Tuned Percussion, Hard
+  Edges, Scrub Pad (now Smear Pad) and Backwards Loop (now Backwards Line).
+  Renamed: Syllable Singer to Simple Singer, Chip Syllables to Chip Singer.
+  Line Singer, which was the same as Reactive Singer, is replaced by By Hand
+  Syllables, the one preset for stepping through syllables from the pattern.
+- Line mode now follows Word/Words, Hold (off = short syllables) and Scan
+  (below 64 = backwards).
+- In Phrase, Syllable, Phoneme, Sync and Scrub modes the drawn melody sets each
+  syllable's pitch.
+- Songs keep their saved settings. A new machine starts in Line mode.
 
 **1.4.4**
 - Dark scroll bars in the phrase editor.

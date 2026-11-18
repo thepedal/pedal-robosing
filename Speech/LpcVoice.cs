@@ -63,6 +63,7 @@ namespace PedalRoboSing.Speech
         public int   SyncTicks = 2;
         public float ScanRate;              // Scrub: phrase ms per real ms, signed
         public float ScrubTarget01;         // Scrub: position in the window, 0..1
+        public bool  LineHold = true;       // Line: vowels fill their blocks (off = short, with silence after)
 
         // React: how far the feel of each sound moves the voice, each -1..+1 (0 = off)
         public float ReactLevel;            // open vowels louder, closed quieter
@@ -85,7 +86,7 @@ namespace PedalRoboSing.Speech
         struct Req
         {
             public Kind Kind; public Utterance U; public LpcVoice Leader; public LineScore Score;
-            public float A, B, C, Slot; public int I0, I1;
+            public float A, B, C, Slot; public int I0, I1; public bool Rev;
             public float Midi, Amp;
         }
 
@@ -96,8 +97,10 @@ namespace PedalRoboSing.Speech
         float _segS, _segH, _segE, _rate, _holdLeft;
         int _phase, _sylIdx, _sylLast;
         float _scanOff, _refSemis;
-        LineScore _score;                       // Line mode
-        int _lineStep;
+        LineScore _score;                       // the line's melody: timing in Line mode, pitch in every mode
+        int _lineStep, _lineFirst, _lineLast, _lineCount, _sylCur;
+        bool _lineRev;
+        float _lineOffTicks;
         float _lineClock, _lineNom, _lineNextNom, _lineWait, _lineBase;
         bool _resting, _vowelSeen, _lineSettled;
         /// <summary>Test hook: called with (syllable, ms since the line started) when a syllable's vowel begins.</summary>
@@ -140,23 +143,27 @@ namespace PedalRoboSing.Speech
 
         // ── Starting notes ───────────────────────────────────────────────────
         /// <summary>Speak the window [tStart, tEnd] of a phrase at speaking pace.</summary>
-        public void StartPhrase(Utterance u, float tStart, float tEnd, float midi, float amp) =>
-            Start(new Req { Kind = Kind.Run, U = u, A = tStart, B = tEnd, Midi = midi, Amp = amp }, false);
+        public void StartPhrase(Utterance u, float tStart, float tEnd, float midi, float amp, LineScore score = null) =>
+            Start(new Req { Kind = Kind.Run, U = u, A = tStart, B = tEnd, Midi = midi, Amp = amp, Score = score }, false);
 
         /// <summary>Play one unit. slot &lt; 0: natural length; +infinity: hold until NoteOff; else fit to slot ms.</summary>
         public void StartSegment(Utterance u, float s, float h, float e, float slot, float midi, float amp) =>
             Start(new Req { Kind = Kind.Seg, U = u, A = s, B = h, C = e, Slot = slot, Midi = midi, Amp = amp }, true);
 
         /// <summary>Play syllables first..last, one per SyncTicks ticks.</summary>
-        public void StartSync(Utterance u, int first, int last, float midi, float amp) =>
-            Start(new Req { Kind = Kind.Sync, U = u, I0 = first, I1 = last, Midi = midi, Amp = amp }, false);
+        public void StartSync(Utterance u, int first, int last, float midi, float amp, LineScore score = null) =>
+            Start(new Req { Kind = Kind.Sync, U = u, I0 = first, I1 = last, Midi = midi, Amp = amp, Score = score }, false);
 
-        public void StartScrub(Utterance u, float tStart, float tEnd, float midi, float amp) =>
-            Start(new Req { Kind = Kind.Scrub, U = u, A = tStart, B = tEnd, Midi = midi, Amp = amp }, true);
+        public void StartScrub(Utterance u, float tStart, float tEnd, float midi, float amp, LineScore score = null) =>
+            Start(new Req { Kind = Kind.Scrub, U = u, A = tStart, B = tEnd, Midi = midi, Amp = amp, Score = score }, true);
 
         /// <summary>Sing the whole line from its melody (null = two ticks a syllable, all on the note).</summary>
         public void StartLine(Utterance u, LineScore score, float midi, float amp) =>
-            Start(new Req { Kind = Kind.Line, U = u, Score = score, Midi = midi, Amp = amp }, false);
+            StartLine(u, score, 0, (u?.SylS.Length ?? 0) - 1, false, midi, amp);
+
+        /// <summary>Sing syllables first..last of the line; backwards = last syllable first, each still sung forwards.</summary>
+        public void StartLine(Utterance u, LineScore score, int first, int last, bool backwards, float midi, float amp) =>
+            Start(new Req { Kind = Kind.Line, U = u, Score = score, I0 = first, I1 = last, Rev = backwards, Midi = midi, Amp = amp }, false);
 
         public void StartFollow(LpcVoice leader, float midi, float amp) =>
             Start(new Req { Kind = Kind.Follow, U = Utterance.Empty, Leader = leader, Midi = midi, Amp = amp }, true);
@@ -230,10 +237,12 @@ namespace PedalRoboSing.Speech
             _tailSamples = (int)((0.04f + 0.35f * Math.Max(ConsTune, _consEff)) * ChipRate);
             _fi = _si = _pi = _qi = 0;
             _refSemis = 0f;
+            _score = r.Score; _lineBase = r.Midi; _sylCur = 0;
             switch (r.Kind)
             {
                 case Kind.Run:
                     _tStart = r.A; _tEnd = r.B; _t = r.A;
+                    MelodyPitch();
                     break;
                 case Kind.Seg:
                     _tStart = 0; _tEnd = _u.Length;
@@ -243,20 +252,37 @@ namespace PedalRoboSing.Speech
                     _tStart = 0; _tEnd = _u.Length;
                     _sylIdx = r.I0; _sylLast = r.I1;
                     SetSeg(_u.SylS[_sylIdx], _u.SylH[_sylIdx], _u.SylE[_sylIdx], TickMs * SyncTicks, 0f);
+                    _noteMidi = _lineBase + Pitch(_sylIdx);
                     break;
                 case Kind.Scrub:
                     _tStart = r.A; _tEnd = r.B; _scanOff = 0f;
                     if (fresh) _t = ScrubTarget();
+                    MelodyPitch();
                     break;
                 case Kind.Line:
+                {
                     _tStart = 0; _tEnd = _u.Length;
-                    _score = r.Score; _lineBase = r.Midi;
+                    int n = _u.SylS.Length;
+                    _lineFirst = Math.Clamp(r.I0, 0, Math.Max(0, n - 1));
+                    _lineLast = Math.Clamp(r.I1, _lineFirst, Math.Max(0, n - 1));
+                    _lineCount = n > 0 ? _lineLast - _lineFirst + 1 : 0;
+                    _lineRev = r.Rev;
                     _lineClock = 0f; _lineStep = 0; _resting = false;
-                    _lineNom = Gap(0) * TickMs;
-                    _noteMidi = _lineBase + Pitch(0);
-                    _t = _u.SylS.Length > 0 ? _u.SylS[0] : 0f;
+                    _lineNom = StepGap(0) * TickMs;
+
+                    // Where this run sits on the editor's grid, for the marker
+                    int ticks = 0;
+                    for (int i = 0; i < n && i <= _lineLast; i++)
+                    {
+                        if (!_lineRev && i == _lineFirst) { if (i > 0) ticks += Gap(i); break; }
+                        ticks += Gap(i) + Len(i);
+                    }
+                    _lineOffTicks = ticks;
+
+                    if (_lineCount > 0) { _noteMidi = _lineBase + Pitch(K(0)); _t = _u.SylS[K(0)]; }
                     LineEnter();
                     break;
+                }
             }
         }
 
@@ -265,7 +291,8 @@ namespace PedalRoboSing.Speech
         {
             ticks = -1f;
             if (!IsActive || _kind != Kind.Line || !_speaking || _u.Phonetic != phonetic) return false;
-            ticks = _lineClock / Math.Max(1f, TickMs);
+            float run = _lineClock / Math.Max(1f, TickMs);
+            ticks = _lineRev ? Math.Max(0f, _lineOffTicks - run) : _lineOffTicks + run;
             return true;
         }
 
@@ -278,25 +305,48 @@ namespace PedalRoboSing.Speech
         int Len(int k) => _score?.LenAt(k) ?? LineScore.DefaultLen;
         int Pitch(int k) => _score?.PitchAt(k) ?? 0;
 
+        // Step j of the run is syllable K(j): the Word/Words window, forwards or backwards.
+        int K(int j) => _lineRev ? _lineLast - j : _lineFirst + j;
+
+        // Silence before step j. Backwards, the silences keep their places between the same two syllables.
+        int StepGap(int j)
+        {
+            if (j >= _lineCount) return 0;
+            if (j == 0) return !_lineRev && _lineFirst == 0 ? Gap(0) : 0;
+            return _lineRev ? Gap(K(j - 1)) : Gap(K(j));
+        }
+
+        // The melody's pitch for wherever the mouth is, for the modes that move through time freely.
+        void MelodyPitch()
+        {
+            if (_score == null) return;
+            var s = _u.SylS;
+            if (s.Length == 0) return;
+            if (_sylCur >= s.Length) _sylCur = s.Length - 1;
+            while (_sylCur + 1 < s.Length && _t >= s[_sylCur + 1]) _sylCur++;
+            while (_sylCur > 0 && _t < s[_sylCur]) _sylCur--;
+            _noteMidi = _lineBase + _score.PitchAt(_sylCur);
+        }
+
         float Onset(int k) =>
             (uint)k < (uint)_u.SylS.Length ? (_u.SylV[k] - _u.SylS[k]) / Math.Max(0.05f, Speed) : 0f;
 
         // `late` is how far the clock has already run past the moment this step was due
         void LineEnter(float late = 0f)
         {
-            if (_lineStep >= _u.SylS.Length) { _speaking = false; _resting = false; return; }
-            float start = Math.Max(_lineClock - late, _lineNom - Onset(_lineStep));
+            if (_lineStep >= _lineCount) { _speaking = false; _resting = false; return; }
+            float start = Math.Max(_lineClock - late, _lineNom - Onset(K(_lineStep)));
             if (start > _lineClock + 1f) { _resting = true; _lineWait = start; _lineSettled = false; }
             else LineBeginSyllable(_lineClock - start, true);
         }
 
         void LineBeginSyllable(float late, bool maySettle)
         {
-            int k = _lineStep;
+            int j = _lineStep, k = K(j);
             float start = _lineClock - late;
             float nomEnd = _lineNom + Len(k) * TickMs;
-            _lineNextNom = nomEnd + Gap(k + 1) * TickMs;
-            float end = k + 1 < _u.SylS.Length ? Math.Min(nomEnd, _lineNextNom - Onset(k + 1)) : nomEnd;
+            _lineNextNom = nomEnd + StepGap(j + 1) * TickMs;
+            float end = j + 1 < _lineCount ? Math.Min(nomEnd, _lineNextNom - Onset(K(j + 1))) : nomEnd;
             float slot = Math.Max(30f, end - start);
 
             // A syllable squeezed into a short slot runs faster, so its consonants take
@@ -311,6 +361,7 @@ namespace PedalRoboSing.Speech
             _resting = false;
             _noteMidi = _lineBase + Pitch(k);
             _vowelSeen = false;
+            if (!LineHold && slot > natural) slot = -1f;          // short: the syllable at its own length, then silence
             SetSeg(_u.SylS[k], _u.SylH[k], _u.SylE[k], slot, Math.Max(0f, late));
         }
 
@@ -353,6 +404,7 @@ namespace PedalRoboSing.Speech
                 case Kind.Run:
                     _t += dt * Speed;
                     if (_t > _tEnd) _speaking = false;
+                    MelodyPitch();
                     break;
 
                 case Kind.Seg:
@@ -388,7 +440,7 @@ namespace PedalRoboSing.Speech
                     }
                     else _t += dt * _rate;
 
-                    if (_kind == Kind.Line && !_vowelSeen && _lineStep < _u.SylV.Length && _t >= _u.SylV[_lineStep])
+                    if (_kind == Kind.Line && !_vowelSeen && _lineStep < _lineCount && _t >= _u.SylV[K(_lineStep)])
                     {
                         _vowelSeen = true;
                         LineTrace?.Invoke(_lineStep, _lineClock);
@@ -401,6 +453,7 @@ namespace PedalRoboSing.Speech
                             float carry = (_t - _segE) / _rate;
                             _sylIdx++;
                             SetSeg(_u.SylS[_sylIdx], _u.SylH[_sylIdx], _u.SylE[_sylIdx], TickMs * SyncTicks, carry);
+                            _noteMidi = _lineBase + Pitch(_sylIdx);
                         }
                         else if (_kind == Kind.Line) LineNext((_t - _segE) / _rate);
                         else _speaking = false;
@@ -413,6 +466,7 @@ namespace PedalRoboSing.Speech
                     float target = ScrubTarget();
                     if (ScanRate != 0f || GlideMs <= 0f) _t = target;
                     else _t += (target - _t) * (1f - MathF.Exp(-dt / GlideMs));
+                    MelodyPitch();
                     break;
                 }
             }

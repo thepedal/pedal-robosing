@@ -17,7 +17,7 @@ static class ReactDemo
     {
         var h = new Host(); h.MasterInfo.SamplesPerTick = Tick;
         // Everything the test doesn't set is pinned off, whatever the machine's defaults are
-        var m = new PedalRoboSingMachine(h) { Excitation = 1, ChipRate = 5, Frame = 15, CoefBits = 10, DacBits = 14, Speaker = 30,
+        var m = new PedalRoboSingMachine(h) { PlayMode = 1, Excitation = 1, ChipRate = 5, Frame = 15, CoefBits = 10, DacBits = 14, Speaker = 30,
             Tune = 0, VibDepth = 0, Portamento = 0, Glide = 0, ConsTune = 0,
             ReactLevel = 64, ReactTune = 64, ReactSize = 64, ReactRing = 64, ReactVib = 64, ReactRhyme = 64, ReactAllit = 64 };
         m.SetPhrases(new[] { phrase });

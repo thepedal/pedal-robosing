@@ -16,7 +16,7 @@ static class Demo
     static PedalRoboSingMachine M()
     {
         var h = new Host(); h.MasterInfo.SamplesPerTick = Tick;
-        var m = new PedalRoboSingMachine(h) { ChipRate = 5, CoefBits = 9, DacBits = 12, Speaker = 30, Excitation = 1 };
+        var m = new PedalRoboSingMachine(h) { PlayMode = 1, ChipRate = 5, CoefBits = 9, DacBits = 12, Speaker = 30, Excitation = 1 };
         m.SetPhrases(new[] { "I am a robot, I make strange music.", "Seven silver circuits sing.", "Stop. Tick. Kiss. Spit. Shock." });
         return m;
     }

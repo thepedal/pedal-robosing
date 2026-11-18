@@ -49,6 +49,7 @@ static class Smoke
             }
             return;
         }
+        if (args.Length == 2 && args[0] == "canon") { CanonDemo.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "line") { LineDemo.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "react") { ReactDemo.Run(args[1]); return; }
         if (args.Length == 3 && args[0] == "song") { SongPlayer.Run(args[1], args[2]); return; }

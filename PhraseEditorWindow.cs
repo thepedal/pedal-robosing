@@ -35,7 +35,7 @@ namespace PedalRoboSing
 
         const string Intro =
             "One phrase per line (line 1 is Phrase 1). The grid shows the melody of the line under the caret: drag a block up or down for pitch, " +
-            "sideways for the silence before it, and its right edge for length. With Play Mode on Line, one note in the pattern sings the whole line.";
+            "sideways for the silence before it, and its right edge for length. One note in the pattern with the line's Phrase number sings it; presets and parameters change how it sounds.";
 
         const string Help =
             "PHRASES\n" +
@@ -46,12 +46,16 @@ namespace PedalRoboSing
             "Put phonemes in brackets, e.g.  [R IY B AH1 Z]  (1 marks the stressed vowel, _ is a pause).\n" +
             "Vowels: IY IH EY EH AE AA AO OW UH UW AH AX ER AY AW OY\n" +
             "Consonants: P B T D K G CH JH F V TH DH S Z SH ZH HH M N NG L R W Y WH\n\n" +
-            "MELODY (Play Mode: Line)\n" +
+            "MELODY\n" +
             "Each block is one syllable of the line under the caret.\n" +
             "Drag it up or down to change its pitch; the highlighted row is the note played in the pattern.\n" +
             "Drag it sideways to change the silence before it. Drag its right edge to change its length.\n" +
             "Sing line plays it from the last note played on track 1. The orange marker shows where the voice is.\n" +
-            "Drag the bar between the text and the grid to resize them.";
+            "Drag the bar between the text and the grid to resize them.\n\n" +
+            "IN THE PATTERN\n" +
+            "One note with the line's Phrase number sings the whole line; the note sets the key. Every preset sings what is drawn here and only changes the sound.\n" +
+            "Word and Words sing part of the line. Hold off makes the syllables short. Scan below 64 sings the line backwards.\n" +
+            "If you set Play Mode to Syllable, Phoneme, Sync or Scrub, your pattern sets the timing and the melody here still sets each syllable's pitch.";
 
         public PhraseEditorWindow(PedalRoboSingMachine machine)
         {

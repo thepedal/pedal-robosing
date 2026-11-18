@@ -32,7 +32,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "1.4.4";
+        internal const string Version = "1.5.0";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;
@@ -146,11 +146,11 @@ namespace PedalRoboSing
         [ParameterDecl(Name = "Breath", Description = "Adds aspiration noise to voiced sounds", MinValue = 0, MaxValue = 127, DefValue = 0)]
         public int Breath { get; set; } = 0;
 
-        [ParameterDecl(Name = "Play Mode", Description = "How notes move the mouth through the phrase", MinValue = 0, MaxValue = 5, DefValue = 1,
+        [ParameterDecl(Name = "Play Mode", Description = "How notes move the mouth through the phrase", MinValue = 0, MaxValue = 5, DefValue = 5,
             ValueDescriptions = new[] { "Phrase", "Syllable", "Phoneme", "Sync", "Scrub", "Line" })]
-        public int PlayMode { get; set; } = 1;
+        public int PlayMode { get; set; } = 5;
 
-        [ParameterDecl(Name = "Hold", Description = "Syllable/Phoneme: sustain the sound while the note is held", MinValue = 0, MaxValue = 1, DefValue = 1,
+        [ParameterDecl(Name = "Hold", Description = "Line: vowels fill their blocks (off = short and separate). Syllable/Phoneme: sustain while the note is held", MinValue = 0, MaxValue = 1, DefValue = 1,
             ValueDescriptions = new[] { "Off", "On" })]
         public int Hold { get; set; } = 1;
 
@@ -160,7 +160,7 @@ namespace PedalRoboSing
         [ParameterDecl(Name = "Glide", Description = "How slowly the mouth moves to a new shape", MinValue = 0, MaxValue = 127, DefValue = 15)]
         public int Glide { get; set; } = 15;
 
-        [ParameterDecl(Name = "Scan", Description = "Scrub: travel through the Word/Words window on its own (64 = still, below = backwards)", MinValue = 0, MaxValue = 127, DefValue = 64)]
+        [ParameterDecl(Name = "Scan", Description = "Line: below 64 sings the line backwards. Scrub: travel through the window on its own (64 = still)", MinValue = 0, MaxValue = 127, DefValue = 64)]
         public int Scan { get; set; } = 64;
 
         [ParameterDecl(Name = "Mouth", Description = "Shared: tracks 2-8 copy track 1's mouth, so a chord speaks as one", MinValue = 0, MaxValue = 1, DefValue = 0,
@@ -372,6 +372,8 @@ namespace PedalRoboSing
             if (Mouth == 1 && i > 0) { v.StartFollow(_voices[0], midi, amp); return; }
 
             var u = bank.Get(_phrase[i], Mode);
+            // The melody drawn for the line: its timing drives Line mode, its pitches every mode
+            var sc = Mode == 0 ? bank.ScoreFor(_phrase[i]) : null;
             int wc = u.WordCount;
             if (wc == 0 || u.Length <= 0f) return;
             int w0 = Math.Clamp(_word[i] - 1, 0, wc - 1);
@@ -392,26 +394,35 @@ namespace PedalRoboSing
                     int k = first + c % count;
                     _cursor[i] = (c + 1) % count;                 // wraps round the window
                     float slot = Hold == 1 ? float.PositiveInfinity : -1f;
-                    if (ph) v.StartSegment(u, u.PhS[k], u.PhH[k], u.PhE[k], slot, midi, amp);
-                    else    v.StartSegment(u, u.SylS[k], u.SylH[k], u.SylE[k], slot, midi, amp);
+                    if (ph)
+                    {
+                        int syl = 0;                              // the syllable this phoneme belongs to
+                        while (syl + 1 < u.SylS.Length && u.PhS[k] >= u.SylS[syl + 1]) syl++;
+                        v.StartSegment(u, u.PhS[k], u.PhH[k], u.PhE[k], slot, midi + (sc?.PitchAt(syl) ?? 0), amp);
+                    }
+                    else v.StartSegment(u, u.SylS[k], u.SylH[k], u.SylE[k], slot, midi + (sc?.PitchAt(k) ?? 0), amp);
                     break;
                 }
                 case 3:
                 {
                     u.Range(false, w0, w1, out int first, out int count);
                     if (count == 0) return;
-                    v.StartSync(u, first, first + count - 1, midi, amp);
+                    v.StartSync(u, first, first + count - 1, midi, amp, sc);
                     break;
                 }
                 case 4:
                     v.ScrubTarget01 = _position[i] / 1000f;
-                    v.StartScrub(u, ts, te, midi, amp);
+                    v.StartScrub(u, ts, te, midi, amp, sc);
                     break;
                 case 5:                                           // the line's own melody; one note starts it
-                    v.StartLine(u, Mode == 0 ? bank.ScoreFor(_phrase[i]) : null, midi, amp);
+                {
+                    u.Range(false, w0, w1, out int first, out int count);
+                    if (count == 0) return;
+                    v.StartLine(u, sc, first, first + count - 1, Scan < 64, midi, amp);
                     break;
+                }
                 default:
-                    v.StartPhrase(u, ts, te, midi, amp);
+                    v.StartPhrase(u, ts, te, midi, amp, sc);
                     break;
             }
         }
@@ -467,7 +478,7 @@ namespace PedalRoboSing
                 v.GlideMs = glide; v.TuneAmt = Tune / 127f; v.TuneMode = TuneTo; v.Root = Root; v.ScaleMask = mask;
                 v.InflSnap = InflectSnap == 1; v.ConsTune = ConsTune / 127f; v.ConsRatio = consRatio;
                 v.VibDepth = VibDepth / 127f; v.VibRateHz = 2f + VibRate / 127f * 8f; v.PortaMs = porta;
-                v.TickMs = tickMs; v.SyncTicks = SyncStep; v.ScanRate = (Scan - 64) / 32f;
+                v.TickMs = tickMs; v.SyncTicks = SyncStep; v.ScanRate = (Scan - 64) / 32f; v.LineHold = Hold == 1;
                 v.ScrubTarget01 = _position[i] / 1000f;
                 v.ReactLevel = React(ReactLevel); v.ReactTune = React(ReactTune); v.ReactSize = React(ReactSize);
                 v.ReactRing = React(ReactRing); v.ReactVib = React(ReactVib);
@@ -489,7 +500,7 @@ namespace PedalRoboSing
             {
                 var sc = _auditionScore;
                 _audition = null; _auditionScore = null;
-                if (sc != null) _voices[0].StartLine(aud, sc, NoteMidi(_lastNote[0]), _velocity[0] / 100f);
+                if (sc != null) _voices[0].StartLine(aud, sc, 0, aud.SylS.Length - 1, Scan < 64, NoteMidi(_lastNote[0]), _velocity[0] / 100f);
                 else _voices[0].StartPhrase(aud, 0f, aud.Length, NoteMidi(_lastNote[0]), _velocity[0] / 100f);
             }
 

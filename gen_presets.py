@@ -17,37 +17,39 @@ GLOBALS = [
     ("Volume", 100), ("Speed", 64), ("Voice", 64), ("Inflection", 64), ("Mode", 0),
     ("Excitation", 1), ("Chip Rate", 5), ("Frame", 15), ("Coef Bits", 10), ("DAC Bits", 14),
     ("Speaker", 30), ("Note Off", 0), ("Breath", 0),
-    ("Play Mode", 1), ("Hold", 1), ("Sync Step", 2), ("Glide", 15), ("Scan", 64), ("Mouth", 0),
+    ("Play Mode", 5), ("Hold", 1), ("Sync Step", 2), ("Glide", 15), ("Scan", 64), ("Mouth", 0),
     ("Tune", 50), ("Tune To", 0), ("Root", 0), ("Scale", 1), ("Inflect Snap", 0),
     ("Cons Tune", 40), ("Cons Pitch", 2), ("Vib Depth", 30), ("Vib Rate", 64), ("Portamento", 20),
     ("React Level", 95), ("React Tune", 120), ("React Size", 90), ("React Ring", 110), ("React Vib", 120),
     ("React Rhyme", 100), ("React Allit", 100),
 ]
 
+# Since v1.5 every preset sings the line drawn in the phrase editor (Play Mode
+# Line) and only changes how it sounds; 23 is the one for playing syllables by hand.
 # The machine's defaults changed in v1.2. Presets are written against this plain
 # baseline (the v1.0 defaults, every React control off) so they don't move with them.
 PLAIN = {"Excitation": 0, "Chip Rate": 2, "Frame": 25, "Coef Bits": 6, "DAC Bits": 8, "Speaker": 64,
-         "Glide": 0, "Tune": 0, "Cons Tune": 0, "Vib Depth": 0, "Portamento": 0,
+         "Play Mode": 5, "Glide": 0, "Tune": 0, "Cons Tune": 0, "Vib Depth": 0, "Portamento": 0,
          "React Level": 64, "React Tune": 64, "React Size": 64, "React Ring": 64, "React Vib": 64,
          "React Rhyme": 64, "React Allit": 64}
 
 CLEAN = {"Excitation": 1, "Chip Rate": 5, "Frame": 15, "Coef Bits": 10, "DAC Bits": 14, "Speaker": 30}
 
 PRESETS = {
-    "01 Syllable Singer":    dict(CLEAN, **{"Vib Depth": 20, "Portamento": 30}),
+    "01 Simple Singer":      dict(CLEAN, **{"Vib Depth": 20, "Portamento": 30}),
     "02 Overtone Singer":    dict(CLEAN, **{"Tune": 115, "Glide": 30, "Vib Depth": 15}),
     "03 Scale Bells":        dict(CLEAN, **{"Excitation": 2, "Tune": 127, "Tune To": 1, "Scale": 7, "Glide": 45}),
-    "04 Chant in Time":      dict(CLEAN, **{"Play Mode": 3, "Inflection": 0, "Excitation": 2, "Tune": 50}),
+    "04 Chant in Time":      dict(CLEAN, **{"Inflection": 0, "Excitation": 2, "Tune": 50}),
     "05 Choir One Mouth":    dict(CLEAN, **{"Mouth": 1, "Tune": 60, "Vib Depth": 18, "Glide": 25}),
-    "06 Tuned Percussion":   dict(CLEAN, **{"Play Mode": 2, "Hold": 0, "Cons Tune": 115, "Speaker": 20}),
-    "07 Scrub Pad":          dict(CLEAN, **{"Play Mode": 4, "Glide": 80, "Tune": 80, "Breath": 25}),
-    "08 Backwards Loop":     dict(CLEAN, **{"Play Mode": 4, "Scan": 44, "Tune": 60}),
-    "09 Speech Melody":      dict(CLEAN, **{"Play Mode": 0, "Inflection": 110, "Inflect Snap": 1, "Scale": 6, "Portamento": 20}),
+    "06 Tuned Percussion":   dict(CLEAN, **{"Hold": 0, "Cons Tune": 115, "Speaker": 20}),
+    "07 Smear Pad":          dict(CLEAN, **{"Glide": 80, "Tune": 80, "Breath": 25, "Portamento": 60}),
+    "08 Backwards Line":     dict(CLEAN, **{"Scan": 44, "Tune": 60, "Glide": 20}),
+    "09 Speech Melody":      dict(CLEAN, **{"Inflection": 110, "Inflect Snap": 1, "Scale": 6, "Portamento": 20}),
     "10 Whisper Hiss":       dict(CLEAN, **{"Excitation": 4, "Cons Tune": 90, "Cons Pitch": 1, "Volume": 115}),
-    "11 Chip Talker":        {"Play Mode": 0},
-    "12 Chip Syllables":     {"Tune": 40},
-    "13 Spelling Bee":       {"Play Mode": 0, "Mode": 2},
-    "14 Broken Batteries":   {"Play Mode": 0, "Coef Bits": 3, "DAC Bits": 4, "Frame": 45, "Chip Rate": 0, "Speed": 50, "Speaker": 90},
+    "11 Chip Talker":        {},
+    "12 Chip Singer":        {"Tune": 40},
+    "13 Spelling Bee":       {"Mode": 2},
+    "14 Broken Batteries":   {"Coef Bits": 3, "DAC Bits": 4, "Frame": 45, "Chip Rate": 0, "Speed": 50, "Speaker": 90},
     "15 Giant Drone":        dict(CLEAN, **{"Voice": 15, "Glide": 100, "Tune": 100, "Tune To": 1, "Scale": 13, "Excitation": 2}),
     "16 Tiny Robot":         {"Voice": 110, "Chip Rate": 3, "Tune": 70, "Excitation": 3, "Inflection": 0},
     "17 Reactive Singer":    dict(CLEAN, **{"Tune": 50, "Vib Depth": 30, "Portamento": 20, "Glide": 15, "Cons Tune": 40,
@@ -55,10 +57,10 @@ PRESETS = {
                                     "React Rhyme": 100, "React Allit": 100}),
     "18 Open Vowels Ring":   dict(CLEAN, **{"Tune": 55, "React Tune": 127, "Glide": 25}),
     "19 Rubber Mouth":       dict(CLEAN, **{"React Size": 127, "Glide": 30, "Tune": 40}),
-    "20 Hard Edges":         dict(CLEAN, **{"Play Mode": 2, "Hold": 0, "Cons Tune": 60, "React Ring": 127, "React Level": 100}),
+    "20 Hard Edges":         dict(CLEAN, **{"Hold": 0, "Cons Tune": 60, "React Ring": 127, "React Level": 100}),
     "21 Rhyme Spotlight":    dict(CLEAN, **{"Tune": 30, "Vib Depth": 25, "React Rhyme": 127, "Glide": 15}),
     "22 Tongue Twister":     dict(CLEAN, **{"Cons Tune": 50, "React Allit": 127, "React Ring": 100}),
-    "23 Line Singer":        dict(CLEAN, **{"Play Mode": 5, "Tune": 50, "Vib Depth": 30, "Portamento": 20, "Glide": 15, "Cons Tune": 40,
+    "23 By Hand Syllables":  dict(CLEAN, **{"Play Mode": 1, "Tune": 50, "Vib Depth": 30, "Portamento": 20, "Glide": 15, "Cons Tune": 40,
                                     "React Level": 95, "React Tune": 120, "React Size": 90, "React Ring": 110, "React Vib": 120,
                                     "React Rhyme": 100, "React Allit": 100}),
 }

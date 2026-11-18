@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PresetDictionary>
-  <Item Key="01 Syllable Singer">
+  <Item Key="01 Simple Singer">
     <Preset Machine="Pedal RoboSing">
       <Parameters>
         <Parameter Name="Volume" Group="1" Index="0" Track="0" Value="100" />
@@ -16,7 +16,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -60,7 +60,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="30" />
@@ -104,7 +104,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="45" />
@@ -148,7 +148,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="3" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -192,7 +192,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="25" />
@@ -236,7 +236,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="20" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="2" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="0" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -264,7 +264,7 @@
       <Comment></Comment>
     </Preset>
   </Item>
-  <Item Key="07 Scrub Pad">
+  <Item Key="07 Smear Pad">
     <Preset Machine="Pedal RoboSing">
       <Parameters>
         <Parameter Name="Volume" Group="1" Index="0" Track="0" Value="100" />
@@ -280,7 +280,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="25" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="4" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="80" />
@@ -295,7 +295,7 @@
         <Parameter Name="Cons Pitch" Group="1" Index="25" Track="0" Value="2" />
         <Parameter Name="Vib Depth" Group="1" Index="26" Track="0" Value="0" />
         <Parameter Name="Vib Rate" Group="1" Index="27" Track="0" Value="64" />
-        <Parameter Name="Portamento" Group="1" Index="28" Track="0" Value="0" />
+        <Parameter Name="Portamento" Group="1" Index="28" Track="0" Value="60" />
         <Parameter Name="React Level" Group="1" Index="29" Track="0" Value="64" />
         <Parameter Name="React Tune" Group="1" Index="30" Track="0" Value="64" />
         <Parameter Name="React Size" Group="1" Index="31" Track="0" Value="64" />
@@ -308,7 +308,7 @@
       <Comment></Comment>
     </Preset>
   </Item>
-  <Item Key="08 Backwards Loop">
+  <Item Key="08 Backwards Line">
     <Preset Machine="Pedal RoboSing">
       <Parameters>
         <Parameter Name="Volume" Group="1" Index="0" Track="0" Value="100" />
@@ -324,10 +324,10 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="4" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
-        <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
+        <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="20" />
         <Parameter Name="Scan" Group="1" Index="17" Track="0" Value="44" />
         <Parameter Name="Mouth" Group="1" Index="18" Track="0" Value="0" />
         <Parameter Name="Tune" Group="1" Index="19" Track="0" Value="60" />
@@ -368,7 +368,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="0" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -412,7 +412,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -456,7 +456,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="64" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="0" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -484,7 +484,7 @@
       <Comment></Comment>
     </Preset>
   </Item>
-  <Item Key="12 Chip Syllables">
+  <Item Key="12 Chip Singer">
     <Preset Machine="Pedal RoboSing">
       <Parameters>
         <Parameter Name="Volume" Group="1" Index="0" Track="0" Value="100" />
@@ -500,7 +500,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="64" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -544,7 +544,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="64" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="0" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -588,7 +588,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="90" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="0" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -632,7 +632,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="100" />
@@ -676,7 +676,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="64" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -720,7 +720,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="15" />
@@ -764,7 +764,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="25" />
@@ -808,7 +808,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="30" />
@@ -852,7 +852,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="2" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="0" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -896,7 +896,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="15" />
@@ -940,7 +940,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="0" />
@@ -968,7 +968,7 @@
       <Comment></Comment>
     </Preset>
   </Item>
-  <Item Key="23 Line Singer">
+  <Item Key="23 By Hand Syllables">
     <Preset Machine="Pedal RoboSing">
       <Parameters>
         <Parameter Name="Volume" Group="1" Index="0" Track="0" Value="100" />
@@ -984,7 +984,7 @@
         <Parameter Name="Speaker" Group="1" Index="10" Track="0" Value="30" />
         <Parameter Name="Note Off" Group="1" Index="11" Track="0" Value="0" />
         <Parameter Name="Breath" Group="1" Index="12" Track="0" Value="0" />
-        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="5" />
+        <Parameter Name="Play Mode" Group="1" Index="13" Track="0" Value="1" />
         <Parameter Name="Hold" Group="1" Index="14" Track="0" Value="1" />
         <Parameter Name="Sync Step" Group="1" Index="15" Track="0" Value="2" />
         <Parameter Name="Glide" Group="1" Index="16" Track="0" Value="15" />
