@@ -32,7 +32,8 @@ namespace PedalRoboSing
         string _shownPhonetic;
 
         System.Windows.Threading.DispatcherTimer _timer;
-        Button _rootBtn, _scaleBtn, _snapBtn;
+        Button _rootBtn, _scaleBtn, _snapBtn, _lockBtn;
+        bool _keyLockShown;
         TextBlock _keyNote;
         static bool _snap = true;                  // remembered while ReBuzz runs
         int _keyRoot = -1, _keyScale = -1, _keyBase = -2;
@@ -57,9 +58,12 @@ namespace PedalRoboSing
             "Sing line plays it from the last note played on track 1. The orange marker shows where the voice is.\n" +
             "Drag the bar between the text and the grid to resize them.\n\n" +
             "KEY\n" +
-            "Key sets the machine's Root and Scale. Rows outside the key are dark and blocks outside it are red.\n" +
+            "Key sets the song's key. It is saved with the phrases, so loading a preset does not change it. Rows outside the key are dark and blocks outside it are red.\n" +
             "With Snap on, a block dragged up or down lands only on notes in the key. Fit to key moves every block of the line to the nearest note in it.\n" +
-            "The melody is drawn from the note that starts the line, so it is in key for that starting note (the highlighted row). Chromatic turns the key off.\n\n" +
+            "Key Lock on: the grid shows the melody from the key's root. Start the line on the root and it sings as drawn; start it on another note and it moves by scale steps, so it stays in key. " +
+            "The same line on two tracks, started a third apart, sings in harmony.\n" +
+            "Key Lock off: the note that starts the line moves the melody by semitones. Chromatic turns the key off.\n" +
+            "The Root and Scale parameters are separate: they choose what Tune To Scale and Inflect Snap aim at.\n\n" +
             "IN THE PATTERN\n" +
             "One note with the line's Phrase number sings the whole line; the note sets the key. Every preset sings what is drawn here and only changes the sound.\n" +
             "Word and Words sing part of the line. Hold off makes the syllables short. Scan below 64 sings the line backwards.\n" +
@@ -147,16 +151,18 @@ namespace PedalRoboSing
             Grid.SetRow(splitter, 2);
             grid.Children.Add(splitter);
 
-            // The key: the machine's own Root and Scale parameters, set from here
+            // The song's key: kept with the phrases, so presets cannot change it
             var keyBar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 6) };
             keyBar.Children.Add(new TextBlock { Text = "Key", Foreground = Theme.DimInk, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 2, 0) });
-            _rootBtn = Theme.MakeButton("", (s, e) => Theme.ShowChoices(_rootBtn, PedalRoboSingMachine.RootNames, _m.Root,
-                i => { _m.SetGlobal("Root", i); SyncKey(); }), 52);
-            _scaleBtn = Theme.MakeButton("", (s, e) => Theme.ShowChoices(_scaleBtn, PedalRoboSingMachine.ScaleNames, _m.Scale,
-                i => { _m.SetGlobal("Scale", i); SyncKey(); }), 150);
+            _rootBtn = Theme.MakeButton("", (s, e) => Theme.ShowChoices(_rootBtn, PedalRoboSingMachine.RootNames, _m.KeyRootNow,
+                i => { _m.SetKey(i, _m.KeyScaleNow, _m.KeyLock); SyncKey(); }), 52);
+            _scaleBtn = Theme.MakeButton("", (s, e) => Theme.ShowChoices(_scaleBtn, PedalRoboSingMachine.ScaleNames, _m.KeyScaleNow,
+                i => { _m.SetKey(_m.KeyRootNow, i, _m.KeyLock); SyncKey(); }), 150);
+            _lockBtn = Theme.MakeButton("", (s, e) => { _m.SetKey(_m.KeyRootNow, _m.KeyScaleNow, !_m.KeyLock); SyncKey(); }, 110);
             _snapBtn = Theme.MakeButton("", (s, e) => { _snap = !_snap; _keyRoot = -1; SyncKey(); }, 84);
             keyBar.Children.Add(_rootBtn);
             keyBar.Children.Add(_scaleBtn);
+            keyBar.Children.Add(_lockBtn);
             keyBar.Children.Add(_snapBtn);
             keyBar.Children.Add(Theme.MakeButton("Fit to key", (s, e) => { _melody.FitToKey(); _keyRoot = -1; SyncKey(); }, 84));
             _keyNote = new TextBlock { Foreground = Theme.DimInk, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), FontSize = 11.5 };
@@ -185,7 +191,7 @@ namespace PedalRoboSing
             _timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
             _timer.Tick += (s, e) =>
             {
-                SyncKey();                             // follows the played note, and Root/Scale changed anywhere else
+                SyncKey();                             // follows the played note
                 _melody.SetPlayhead(_m.LineProgress(_shownPhonetic));
             };
             _timer.Start();
@@ -200,10 +206,13 @@ namespace PedalRoboSing
         // Bring the grid and the key bar in line with the machine: its Root and Scale, and the last note played
         void SyncKey()
         {
-            int root = _m.Root, scale = _m.Scale, note = _m.LastNoteNumber;
-            if (root == _keyRoot && scale == _keyScale && note == _keyBase) return;
-            _keyRoot = root; _keyScale = scale; _keyBase = note;
-            _melody.BaseNote = note;
+            int root = _m.KeyRootNow, scale = _m.KeyScaleNow, note = _m.LastNoteNumber;
+            bool locked = _m.KeyLock;
+            if (root == _keyRoot && scale == _keyScale && note == _keyBase && locked == _keyLockShown) return;
+            _keyRoot = root; _keyScale = scale; _keyBase = note; _keyLockShown = locked;
+            // Locked, the melody is read as drawn from the key's root, so the grid shows it from the root at or below the played note
+            int shown = locked ? note - (((note - root) % 12) + 12) % 12 : note;
+            _melody.BaseNote = shown;
             _melody.KeyRoot = root; _melody.KeyMask = _m.KeyMask; _melody.Snap = _snap;
             _melody.Redraw();
 
@@ -211,11 +220,13 @@ namespace PedalRoboSing
             _rootBtn.Content = roots[Math.Clamp(root, 0, roots.Length - 1)] + " \u25BE";
             _scaleBtn.Content = scales[Math.Clamp(scale, 0, scales.Length - 1)] + " \u25BE";
             _snapBtn.Content = _snap ? "Snap: On" : "Snap: Off";
+            _lockBtn.Content = locked ? "Key Lock: On" : "Key Lock: Off";
             int outside = _melody.OutOfKey;
-            string from = note >= 0 && note < 120 ? Octaved[note % 12] + (note / 12) : "?";
+            string Name(int n) => n >= 0 && n < 120 ? Octaved[n % 12] + (n / 12) : "?";
+            string count = outside == 0 ? "All notes in key" : outside == 1 ? "1 note outside the key" : outside + " notes outside the key";
             _keyNote.Text = scale == 0 ? "Chromatic: every note is allowed."
-                          : (outside == 0 ? "All notes in key" : outside == 1 ? "1 note outside the key" : outside + " notes outside the key")
-                            + $", for a line started on {from}.";
+                          : locked ? $"{count}. Shown from {Name(shown)}; started on another note it moves by scale steps."
+                          : $"{count}, for a line started on {Name(note)}.";
         }
 
         // Line under the caret, worked out from the text so it doesn't depend on layout

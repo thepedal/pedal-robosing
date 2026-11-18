@@ -63,6 +63,8 @@ namespace PedalRoboSing.Speech
         public int   SyncTicks = 2;
         public float ScanRate;              // Scrub: phrase ms per real ms, signed
         public float ScrubTarget01;         // Scrub: position in the window, 0..1
+        public int   KeyRoot, KeyMask = 0xFFF;   // the song's key, for Key Lock (apart from Root/ScaleMask, which tune the sound)
+        public bool  KeyLock;               // the melody moves by scale steps from the note that starts it
         public bool  LineHold = true;       // Line: vowels fill their blocks (off = short, with silence after)
 
         // React: how far the feel of each sound moves the voice, each -1..+1 (0 = off)
@@ -252,7 +254,7 @@ namespace PedalRoboSing.Speech
                     _tStart = 0; _tEnd = _u.Length;
                     _sylIdx = r.I0; _sylLast = r.I1;
                     SetSeg(_u.SylS[_sylIdx], _u.SylH[_sylIdx], _u.SylE[_sylIdx], TickMs * SyncTicks, 0f);
-                    _noteMidi = _lineBase + Pitch(_sylIdx);
+                    _noteMidi = Mel(_sylIdx);
                     break;
                 case Kind.Scrub:
                     _tStart = r.A; _tEnd = r.B; _scanOff = 0f;
@@ -279,7 +281,7 @@ namespace PedalRoboSing.Speech
                     }
                     _lineOffTicks = ticks;
 
-                    if (_lineCount > 0) { _noteMidi = _lineBase + Pitch(K(0)); _t = _u.SylS[K(0)]; }
+                    if (_lineCount > 0) { _noteMidi = Mel(K(0)); _t = _u.SylS[K(0)]; }
                     LineEnter();
                     break;
                 }
@@ -305,6 +307,14 @@ namespace PedalRoboSing.Speech
         int Len(int k) => _score?.LenAt(k) ?? LineScore.DefaultLen;
         int Pitch(int k) => _score?.PitchAt(k) ?? 0;
 
+        // The note for syllable k: the starting note moved by the melody, in semitones or, locked, in scale steps
+        float Mel(int k)
+        {
+            if (_score == null) return _lineBase;
+            int p = _score.PitchAt(k);
+            return KeyLock ? ScaleSteps.Transpose(_lineBase, p, KeyRoot, KeyMask) : _lineBase + p;
+        }
+
         // Step j of the run is syllable K(j): the Word/Words window, forwards or backwards.
         int K(int j) => _lineRev ? _lineLast - j : _lineFirst + j;
 
@@ -325,7 +335,7 @@ namespace PedalRoboSing.Speech
             if (_sylCur >= s.Length) _sylCur = s.Length - 1;
             while (_sylCur + 1 < s.Length && _t >= s[_sylCur + 1]) _sylCur++;
             while (_sylCur > 0 && _t < s[_sylCur]) _sylCur--;
-            _noteMidi = _lineBase + _score.PitchAt(_sylCur);
+            _noteMidi = Mel(_sylCur);
         }
 
         float Onset(int k) =>
@@ -359,7 +369,7 @@ namespace PedalRoboSing.Speech
             }
 
             _resting = false;
-            _noteMidi = _lineBase + Pitch(k);
+            _noteMidi = Mel(k);
             _vowelSeen = false;
             if (!LineHold && slot > natural) slot = -1f;          // short: the syllable at its own length, then silence
             SetSeg(_u.SylS[k], _u.SylH[k], _u.SylE[k], slot, Math.Max(0f, late));
@@ -453,7 +463,7 @@ namespace PedalRoboSing.Speech
                             float carry = (_t - _segE) / _rate;
                             _sylIdx++;
                             SetSeg(_u.SylS[_sylIdx], _u.SylH[_sylIdx], _u.SylE[_sylIdx], TickMs * SyncTicks, carry);
-                            _noteMidi = _lineBase + Pitch(_sylIdx);
+                            _noteMidi = Mel(_sylIdx);
                         }
                         else if (_kind == Kind.Line) LineNext((_t - _segE) / _rate);
                         else _speaking = false;

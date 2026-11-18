@@ -32,7 +32,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "1.6.0";
+        internal const string Version = "1.7.0";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;
@@ -66,8 +66,33 @@ namespace PedalRoboSing
         };
         internal static string[] RootNames => NoteNames;
 
-        /// <summary>The current scale as a 12-bit mask, bit n = semitone n above Root.</summary>
-        public int KeyMask => ScaleMasks[Math.Clamp(Scale, 0, ScaleMasks.Length - 1)];
+        // ── The song's key ───────────────────────────────────────────────────
+        // Set in the phrase editor and saved with the phrases, so loading a preset
+        // (which resets every parameter) cannot change it. Root and Scale stay as
+        // sound controls: they choose what Tune To Scale and Inflect Snap aim at.
+        // -1 = a song from before v1.7: follow the Root and Scale parameters.
+        int _keyRoot = 0, _keyScale = 1;
+        bool _keyLock = true;
+
+        public int KeyRootNow => _keyRoot >= 0 ? _keyRoot : Math.Clamp(Root, 0, 11);
+        public int KeyScaleNow => Math.Clamp(_keyScale >= 0 ? _keyScale : Scale, 0, ScaleMasks.Length - 1);
+        /// <summary>The key's scale as a 12-bit mask, bit n = semitone n above its root.</summary>
+        public int KeyMask => ScaleMasks[KeyScaleNow];
+        public bool KeyLock => _keyLock;
+        public void SetKey(int root, int scale, bool lock_)
+        {
+            _keyRoot = Math.Clamp(root, 0, 11);
+            _keyScale = Math.Clamp(scale, 0, ScaleMasks.Length - 1);
+            _keyLock = lock_;
+        }
+
+        // A syllable's note: the played note moved by the melody, in semitones or, with Key Lock, in scale steps
+        float MelodyNote(float midi, LineScore sc, int syl)
+        {
+            if (sc == null) return midi;
+            int p = sc.PitchAt(syl);
+            return _keyLock ? ScaleSteps.Transpose(midi, p, KeyRootNow, KeyMask) : midi + p;
+        }
 
         /// <summary>Set one of this machine's own global parameters the way the host does, so the
         /// slider moves and the value is saved with the song (writing the property alone is lost on save).</summary>
@@ -375,12 +400,17 @@ namespace PedalRoboSing
                 var s = new RoboSingState();
                 s.Phrases.AddRange(_bank.Texts);
                 s.Scores.AddRange(_bank.ScoreTexts);
+                s.Version = 2;
+                s.KeyRoot = _keyRoot; s.KeyScale = _keyScale; s.KeyLock = _keyLock;
                 return s;
             }
             set
             {
                 if (value?.Phrases == null) return;
                 _bank = new PhraseBank(value.Phrases, value.Scores);
+                _keyRoot = value.KeyRoot < 0 ? -1 : Math.Clamp(value.KeyRoot, 0, 11);
+                _keyScale = value.KeyScale < 0 ? -1 : Math.Clamp(value.KeyScale, 0, ScaleMasks.Length - 1);
+                _keyLock = value.KeyLock;
             }
         }
 
@@ -427,9 +457,9 @@ namespace PedalRoboSing
                     {
                         int syl = 0;                              // the syllable this phoneme belongs to
                         while (syl + 1 < u.SylS.Length && u.PhS[k] >= u.SylS[syl + 1]) syl++;
-                        v.StartSegment(u, u.PhS[k], u.PhH[k], u.PhE[k], slot, midi + (sc?.PitchAt(syl) ?? 0), amp);
+                        v.StartSegment(u, u.PhS[k], u.PhH[k], u.PhE[k], slot, MelodyNote(midi, sc, syl), amp);
                     }
-                    else v.StartSegment(u, u.SylS[k], u.SylH[k], u.SylE[k], slot, midi + (sc?.PitchAt(k) ?? 0), amp);
+                    else v.StartSegment(u, u.SylS[k], u.SylH[k], u.SylE[k], slot, MelodyNote(midi, sc, k), amp);
                     break;
                 }
                 case 3:
@@ -497,6 +527,7 @@ namespace PedalRoboSing
             float tickMs = (mi != null && mi.SamplesPerTick > 0) ? 1000f * mi.SamplesPerTick / sr : 125f;
             float glide = GlideMsFor(Glide), porta = PortaMsFor(Portamento);
             int mask = ScaleMasks[Math.Clamp(Scale, 0, ScaleMasks.Length - 1)];
+            int keyRoot = KeyRootNow, keyMask = KeyMask;
             float consRatio = ConsRatios[Math.Clamp(ConsPitch, 0, ConsRatios.Length - 1)];
             for (int i = 0; i < MaxVoices; i++)
             {
@@ -508,6 +539,7 @@ namespace PedalRoboSing
                 v.InflSnap = InflectSnap == 1; v.ConsTune = ConsTune / 127f; v.ConsRatio = consRatio;
                 v.VibDepth = VibDepth / 127f; v.VibRateHz = 2f + VibRate / 127f * 8f; v.PortaMs = porta;
                 v.TickMs = tickMs; v.SyncTicks = SyncStep; v.ScanRate = (Scan - 64) / 32f; v.LineHold = Hold == 1;
+                v.KeyRoot = keyRoot; v.KeyMask = keyMask; v.KeyLock = _keyLock;
                 v.ScrubTarget01 = _position[i] / 1000f;
                 v.ReactLevel = React(ReactLevel); v.ReactTune = React(ReactTune); v.ReactSize = React(ReactSize);
                 v.ReactRing = React(ReactRing); v.ReactVib = React(ReactVib);

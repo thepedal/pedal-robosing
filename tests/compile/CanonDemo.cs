@@ -176,6 +176,39 @@ static class CanonDemo
             var bare = new PedalRoboSingMachine(new Host()); bare.SetGlobal("Scale", 2);
             Console.WriteLine($"SetGlobal: host parameters received Root {pr.Last}, Scale {ps.Last}; with no host parameters the property is set: Scale {bare.Scale}, mask 0x{bare.KeyMask:X}");
 
+            // 8. Key Lock: the melody moves by scale steps from the starting note
+            const int Maj = 0xAB5, MinPent = 0x4A9;
+            string T(int note, int[] offs, int root, int mask) => string.Join(" ", offs.Select(o => ScaleSteps.Transpose(note, o, root, mask)));
+            Console.WriteLine($"C major, steps 0 4 7 12 -1 6: from C {T(48, new[] { 0, 4, 7, 12, -1, 6 }, 0, Maj)} | from E {T(52, new[] { 0, 4, 7, 12, -1, 6 }, 0, Maj)} | from C# {T(49, new[] { 0, 4 }, 0, Maj)}");
+            Console.WriteLine("   want: from C 48 52 55 60 47 54 | from E 52 55 59 64 50 58 | from C# 48 52");
+            Console.WriteLine($"A minor pentatonic, steps 0 3 5 7 10 12 from A {T(57, new[] { 0, 3, 5, 7, 10, 12 }, 9, MinPent)} | from D {T(62, new[] { 0, 3, 5, 7, 10, 12 }, 9, MinPent)}   (want 57 60 62 64 67 69 | 62 64 67 69 72 74)");
+            Console.WriteLine($"Chromatic: {T(50, new[] { 0, 1, -3 }, 0, 0xFFF)}   (want 50 51 47)");
+            foreach (var (name, nb) in new[] { ("C-4", 0x41), ("E-4", 0x45), ("D-4", 0x43) })
+            {
+                var h2 = new Host(); h2.MasterInfo.SamplesPerTick = Tick;
+                var km = new PedalRoboSingMachine(h2) { Tune = 0, VibDepth = 0, Portamento = 0, Glide = 0, ConsTune = 0, Inflection = 0,
+                    ReactLevel = 64, ReactTune = 64, ReactSize = 64, ReactRing = 64, ReactVib = 64, ReactRhyme = 64, ReactAllit = 64 };
+                km.SetPhrases(new[] { "[AA] [AA] [AA]" }, new[] { "0,4,0 0,4,4 0,4,7" });
+                km.SetNote(new Note(nb), 0);
+                var a2 = Play(km, 12, out _);
+                Console.WriteLine($"Line from {name}, Key Lock on, C major, melody 0 4 7: {F0(a2, 1 * Tick, 2 * Tick):0} {F0(a2, 5 * Tick, 2 * Tick):0} {F0(a2, 9 * Tick, 2 * Tick):0} Hz");
+            }
+            Console.WriteLine("   want: C E G 262 330 392 | E G B 330 392 494 | D F A 294 349 440");
+            {
+                var ser = new System.Xml.Serialization.XmlSerializer(typeof(RoboSingState));
+                var k1 = new PedalRoboSingMachine(new Host()); k1.SetKey(9, 2, true);
+                var sw = new System.IO.StringWriter(); ser.Serialize(sw, k1.MachineState);
+                var k2 = new PedalRoboSingMachine(new Host()) { Root = 5, Scale = 7 };
+                k2.MachineState = (RoboSingState)ser.Deserialize(new System.IO.StringReader(sw.ToString()));
+                var k3 = new PedalRoboSingMachine(new Host()) { Root = 5, Scale = 7 };
+                k3.MachineState = (RoboSingState)ser.Deserialize(new System.IO.StringReader(
+                    "<?xml version=\"1.0\"?><RoboSingState><Version>1</Version><Phrases><string>Hello.</string></Phrases></RoboSingState>"));
+                var k4 = new PedalRoboSingMachine(new Host());
+                Console.WriteLine($"key saved and loaded: root {k2.KeyRootNow} scale {k2.KeyScaleNow} lock {k2.KeyLock} (want 9 2 True, whatever Root/Scale say)");
+                Console.WriteLine($"a song from before v1.7: root {k3.KeyRootNow} scale {k3.KeyScaleNow} lock {k3.KeyLock} (want 5 7 False: follows the parameters, unlocked)");
+                Console.WriteLine($"a new machine: root {k4.KeyRootNow} scale {k4.KeyScaleNow} lock {k4.KeyLock} (want 0 1 True)");
+            }
+
             Console.WriteLine($"Line from the second word only: {n2 / (119.05 * 16):0.0} ticks (want about 16)");
         }
     }

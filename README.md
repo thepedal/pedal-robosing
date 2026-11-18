@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 1.6.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 1.7.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 The voice is original: a formant model converted to filter coefficients as it
 plays, with no speech ROM data and no code from any other synthesiser. Word
@@ -75,14 +75,26 @@ kept in order; if the syllable count changes, blocks are added or dropped at
 the end. A melody belongs to the Speak text mode; in Spell modes Line uses the
 plain two-ticks melody.
 
-**The key (v1.6).** The **Key** bar above the grid sets the machine's own Root
-and Scale parameters. Rows outside the key are dark, the key's root notes are
-marked in the note strip, and blocks outside the key turn red. With **Snap**
-on, a block dragged up or down lands only on notes in the key. **Fit to key**
-moves every block of the line to the nearest note in the key. The melody is
-drawn from the note that starts the line, so what the grid shows is the key as
-it falls for that starting note (the highlighted row, the last note played on
-track 1). Chromatic turns the key off.
+**The key (v1.6, v1.7).** The **Key** bar above the grid sets the song's key:
+a root and a scale. It is saved with the phrases, so loading a preset does not
+change it. Rows outside the key are dark, the key's root notes are marked in
+the note strip, and blocks outside the key turn red. With **Snap** on, a block
+dragged up or down lands only on notes in the key. **Fit to key** moves every
+block of the line to the nearest note in the key. Chromatic turns the key off.
+
+**Key Lock** (on for a new machine) reads the melody as drawn from the key's
+root, which is how the grid shows it. Start the line on the root and it sings
+as drawn. Start it on any other note and it moves by scale steps, not
+semitones, so it stays in the key: in C major, a line drawn C E G and started
+on E sings E G B. The same line on two tracks, started a third apart, sings in
+harmony. A starting note outside the key is taken as the nearest note in it. A
+block drawn between scale notes stays that much above the scale note below it.
+With Key Lock off, the starting note moves the melody by semitones, as before.
+
+The Root and Scale parameters are a separate thing: they choose what Tune To
+Scale and Inflect Snap aim at, and presets set them. A song saved before v1.7
+has no key of its own, so it follows those parameters, unlocked, until you
+pick a key in the editor.
 
 **The line is what every preset performs (v1.5).** Line is the default Play
 Mode and every preset but the last keeps it, so loading a preset changes how
@@ -285,6 +297,15 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 `midi_to_robosing.py` beside it.
 
 ## Changes
+
+**1.7.0**
+- Key Lock: the note that starts a line picks the scale degree to begin on and
+  the melody moves by scale steps, so it stays in the key from any note and
+  two tracks can sing the same line in harmony. In every play mode.
+- The key is now the song's own, saved with the phrases. Presets no longer
+  reset it (they reset every parameter, Root and Scale included). The editor's
+  Key bar sets it; Root and Scale go back to being sound controls.
+- Songs from before v1.7 follow Root and Scale with Key Lock off, as they did.
 
 **1.6.0**
 - Key bar in the phrase editor: pick Root and Scale there (they are the

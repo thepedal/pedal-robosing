@@ -19,6 +19,12 @@ namespace PedalRoboSing
         public List<string> Phrases { get; set; } = new List<string>();
         /// <summary>Line melodies, one per phrase ("gap,length,pitch" per syllable); empty = none. Added in v1.4.</summary>
         public List<string> Scores { get; set; } = new List<string>();
+        /// <summary>The song's key, set in the phrase editor: root 0..11 and an index into the scale list.
+        /// -1 (a song saved before v1.7) = follow the Root and Scale parameters.</summary>
+        public int KeyRoot { get; set; } = -1;
+        public int KeyScale { get; set; } = -1;
+        /// <summary>The melody moves by scale steps from the note that starts the line. Added in v1.7.</summary>
+        public bool KeyLock { get; set; }
     }
 
     public sealed class PhraseBank
