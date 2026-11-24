@@ -241,6 +241,63 @@ static class CanonDemo
                 Console.WriteLine($"key check sees every note: {out9} outside, fitted to {ed9.Score.ToText()}   (want 2, 0,4,0+4,2+4,5)");
             }
 
+            // 10. Editor comforts: Shift-drag moves the whole line, and a moved block is reported so it can be heard
+            {
+                var ed10 = new MelodyEditor { BaseNote = 48, KeyRoot = 0, KeyMask = 0xAB5, Snap = true };
+                ed10.Load(new[] { "a", "b", "c" }, LineScore.Parse("0,2,0 0,2,2 0,2,4+2,7", 3), 4);
+                var heard = new List<string>(); ed10.Heard += (k, p) => heard.Add(k + ":" + p);
+                void Mouse(string handler, double x, double y, int clicks = 1)
+                {
+                    object args = handler == "OnMove" ? new System.Windows.Input.MouseEventArgs { At = new System.Windows.Point { X = x, Y = y } }
+                                                      : new System.Windows.Input.MouseButtonEventArgs { At = new System.Windows.Point { X = x, Y = y }, ClickCount = clicks };
+                    typeof(MelodyEditor).GetMethod(handler, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(ed10, new object[] { null, args });
+                }
+                System.Windows.Input.Keyboard.Modifiers = System.Windows.Input.ModifierKeys.Shift;
+                Mouse("OnDown", 5, 200); Mouse("OnMove", 5, 168); Mouse("OnUp", 5, 168);          // first block up two rows, C to D
+                Console.WriteLine($"Shift-drag C up to D in C major (C D E~G): {ed10.Score.ToText()}   heard {string.Join(" ", heard)}   (want 0,2,2 0,2,4 0,2,5+2,9: D E F~A)");
+                System.Windows.Input.Keyboard.Modifiers = System.Windows.Input.ModifierKeys.None;
+                Mouse("OnDown", 5, 168); Mouse("OnMove", 5, 200); Mouse("OnUp", 5, 200);
+                Console.WriteLine($"plain drag of the first block back down: {ed10.Score.ToText()}   (want only the first to move: 0,2,0 ...)");
+                ed10.Snap = false; System.Windows.Input.Keyboard.Modifiers = System.Windows.Input.ModifierKeys.Shift;
+                Mouse("OnDown", 5, 200); Mouse("OnMove", 5, 184); Mouse("OnUp", 5, 184);
+                System.Windows.Input.Keyboard.Modifiers = System.Windows.Input.ModifierKeys.None;
+                Console.WriteLine($"Snap off, Shift-drag up one row: {ed10.Score.ToText()}   (want every note one semitone up: 0,2,1 0,2,5 0,2,6+2,10)");
+
+                var h10 = new Host(); h10.MasterInfo.SamplesPerTick = Tick;
+                var m10 = new PedalRoboSingMachine(h10);
+                var u10 = Planner.Build("hello", SpeakMode.Speak);
+                m10.AuditionSyllable(u10, 1, 4);
+                var a10 = Play(m10, 6, out _); Play(m10, 10, out bool still);
+                m10.AuditionSyllable(u10, 9, 0);                                    // out of range: ignored
+                Console.WriteLine($"hear one syllable: level {Rms(a10, 0, a10.Length):0.000}, stops by itself {!still}");
+            }
+
+            // 11. Copy and paste through the real window code
+            {
+                var hw = new Host(); var mw = new PedalRoboSingMachine(hw);
+                mw.SetPhrases(new[] { "Seven silver circuits sing.", "I am a robot.", "Hello.", "", "Peace." }, new[] { "0,2,0 0,2,2 0,2,4 0,2,5 0,2,7 0,2,5 2,6,12", "", "" });
+                var win = new PhraseEditorWindow(mw);
+                var wt = typeof(PhraseEditorWindow); const BindingFlags F = BindingFlags.NonPublic | BindingFlags.Instance;
+                var box = (System.Windows.Controls.TextBox)wt.GetField("_box", F).GetValue(win);
+                var note = (System.Windows.Controls.TextBlock)wt.GetField("_toolNote", F).GetValue(win);
+                var scores = (List<string>)wt.GetField("_scores", F).GetValue(win);
+                void Caret(int line) { int at = 0; var ls = box.Text.Split('\n'); for (int i = 0; i < line; i++) at += ls[i].Length + 1; box.CaretIndex = at + 1; wt.GetMethod("UpdatePreview", F).Invoke(win, null); }
+                void Do(string m) => wt.GetMethod(m, F).Invoke(win, null);
+                Caret(1); Do("CopyMelody"); Console.WriteLine("  copy an empty line : " + note.Text);
+                Do("PasteMelody"); Console.WriteLine("  paste with nothing : " + note.Text);
+                Caret(0); Do("CopyMelody"); Console.WriteLine("  copy line 1        : " + note.Text);
+                Caret(1); Do("PasteMelody"); Console.WriteLine("  paste on line 2    : " + note.Text);
+                Caret(2); Do("PasteMelody"); Console.WriteLine("  paste on line 3    : " + note.Text);
+                Caret(3); box.CaretIndex -= 1; win.GetType().GetMethod("UpdatePreview", F).Invoke(win, null);
+                Do("PasteMelody"); Console.WriteLine("  paste on empty 4   : " + note.Text);
+                Console.WriteLine("  text now           : " + box.Text.Replace("\r", "").Replace("\n", " / "));
+                while (scores.Count > 3 && scores[3].Length > 0 && scores.Count < 6) { Console.WriteLine("  line 4 melody      : " + scores[3]); break; }
+                Do("Undo");
+                Console.WriteLine("  melodies now       : " + string.Join(" | ", scores));
+                Do("Undo"); Do("Undo"); Console.WriteLine("  after two undos    : " + string.Join(" | ", scores) + "   " + note.Text);
+                Do("Redo"); Console.WriteLine("  after one redo     : " + string.Join(" | ", scores));
+            }
+
             Console.WriteLine($"Line from the second word only: {n2 / (119.05 * 16):0.0} ticks (want about 16)");
         }
     }

@@ -30,6 +30,16 @@ namespace PedalRoboSing
         string _shownText;
 
         string _shownPhonetic;
+        Utterance _shownU;
+        // Undo for the melodies: each entry is every line's melody before a change
+        readonly List<string[]> _undo = new List<string[]>(), _redo = new List<string[]>();
+        string[] _snapshot = Array.Empty<string>();
+        Button _hearBtn;
+        TextBlock _toolNote;                       // says what the last melody tool did
+        static int _clipLine;
+        static string _clipText = "";              // the copied line's words, for pasting onto an empty line
+        static bool _hear = true;                  // remembered while ReBuzz runs
+        static string _clip;                       // a copied melody
 
         System.Windows.Threading.DispatcherTimer _timer;
         Button _rootBtn, _scaleBtn, _snapBtn, _lockBtn;
@@ -57,6 +67,9 @@ namespace PedalRoboSing
             "Drag it sideways to change the silence before it. Drag its right edge to change its length.\n" +
             "Double-click a block to cut it in two where you click: the syllable is then sung across both notes, holding its vowel. Drag the pieces to different pitches, and cut again for more (up to 8).\n" +
             "Right-click a piece to join it back to the note before it.\n" +
+            "Hold Shift and drag a block up or down to move the whole line with it: by notes of the key with Snap on, by semitones with it off.\n" +
+            "Undo and Redo step through melody changes. Copy takes the line under the caret; Paste puts its melody on another line, block for block, or on an empty line puts its words there too. Clear removes a melody.\n" +
+            "With Hear on, clicking or moving a block sings that syllable at its new pitch.\n" +
             "Sing line plays it from the last note played on track 1. The orange marker shows where the voice is.\n" +
             "Drag the bar between the text and the grid to resize them.\n\n" +
             "KEY\n" +
@@ -169,8 +182,29 @@ namespace PedalRoboSing
             keyBar.Children.Add(Theme.MakeButton("Fit to key", (s, e) => { _melody.FitToKey(); _keyRoot = -1; SyncKey(); }, 84));
             _keyNote = new TextBlock { Foreground = Theme.DimInk, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), FontSize = 11.5 };
             keyBar.Children.Add(_keyNote);
-            Grid.SetRow(keyBar, 3);
-            grid.Children.Add(keyBar);
+            // Melody tools
+            var tools = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
+            tools.Children.Add(new TextBlock { Text = "Melody", Foreground = Theme.DimInk, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 2, 0) });
+            tools.Children.Add(Theme.MakeButton("Undo", (s, e) => Undo(), 64));
+            tools.Children.Add(Theme.MakeButton("Redo", (s, e) => Redo(), 64));
+            tools.Children.Add(Theme.MakeButton("Copy", (s, e) => CopyMelody(), 64));
+            tools.Children.Add(Theme.MakeButton("Paste", (s, e) => PasteMelody(), 64));
+            tools.Children.Add(Theme.MakeButton("Clear", (s, e) =>
+            {
+                CurrentLine(out int idx, out _);
+                _toolNote.Text = SetMelody("") ? $"Cleared the melody of line {idx + 1}." : $"Line {idx + 1} has no melody to clear.";
+            }, 64));
+            _hearBtn = Theme.MakeButton(_hear ? "Hear: On" : "Hear: Off", (s, e) => { _hear = !_hear; _hearBtn.Content = _hear ? "Hear: On" : "Hear: Off"; }, 84);
+            tools.Children.Add(_hearBtn);
+            _toolNote = new TextBlock { Text = "Shift + drag moves the whole line up or down.", Foreground = Theme.DimInk, VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(12, 0, 0, 0), FontSize = 11.5 };
+            tools.Children.Add(_toolNote);
+            var bars = new StackPanel();
+            keyBar.Margin = new Thickness(0, 6, 0, 4);
+            bars.Children.Add(keyBar);
+            bars.Children.Add(tools);
+            Grid.SetRow(bars, 3);
+            grid.Children.Add(bars);
 
             Grid.SetRow(_melody.View, 4);
             grid.Children.Add(_melody.View);
@@ -181,9 +215,12 @@ namespace PedalRoboSing
                 if (_shownLine < 0) return;
                 while (_scores.Count <= _shownLine) _scores.Add("");
                 _scores[_shownLine] = _melody.Score.IsDefault ? "" : _melody.Score.ToText();
+                Record();
                 _keyRoot = -1; SyncKey();              // the count of notes outside the key may have changed
             };
+            _melody.Heard += (k, pitch) => { if (_hear && _shownU != null) _m.AuditionSyllable(_shownU, k, pitch); };
             _scores.AddRange(machine.GetScores());
+            _snapshot = _scores.ToArray();
 
             _box.SelectionChanged += (s, e) => UpdatePreview();
             _lastLines = AllLines();
@@ -289,6 +326,11 @@ namespace PedalRoboSing
                 _scores.Clear();
                 foreach (var line in now) _scores.Add(byText.TryGetValue(line, out var sc) ? sc : "");
             }
+            if (now.Count != _lastLines.Count)
+            {
+                _undo.Clear(); _redo.Clear();          // the steps were recorded by line number, which has just changed
+                _snapshot = _scores.ToArray();
+            }
             _lastLines = now;
             _shownLine = -1;                       // force the melody panel to reload
         }
@@ -296,11 +338,103 @@ namespace PedalRoboSing
         void ShowMelody(int idx, string line, Utterance u)
         {
             if (idx == _shownLine && line == _shownText) return;
-            _shownLine = idx; _shownText = line; _shownPhonetic = u.Phonetic;
+            _shownLine = idx; _shownText = line; _shownPhonetic = u.Phonetic; _shownU = u;
             _melody.BaseNote = _m.LastNoteNumber;
             while (_scores.Count <= idx) _scores.Add("");
             _melody.Load(u.SylText, LineScore.Parse(_scores[idx], u.SylS.Length), _m.TicksPerBeat);
             _keyRoot = -1; SyncKey();
+        }
+
+        // ── Melody tools ─────────────────────────────────────────────────────
+        // Call after _scores has changed: remembers how it was before
+        void Record()
+        {
+            _undo.Add(_snapshot);
+            if (_undo.Count > 200) _undo.RemoveAt(0);
+            _redo.Clear();
+            _snapshot = _scores.ToArray();
+        }
+
+        void Restore(string[] scores)
+        {
+            _scores.Clear(); _scores.AddRange(scores);
+            _snapshot = _scores.ToArray();
+            _shownLine = -1;
+            UpdatePreview();
+        }
+
+        void Undo()
+        {
+            _toolNote.Text = _undo.Count == 0 ? "Nothing to undo." : "Undone.";
+            if (_undo.Count == 0) return;
+            _redo.Add(_scores.ToArray());
+            var s = _undo[_undo.Count - 1]; _undo.RemoveAt(_undo.Count - 1);
+            Restore(s);
+        }
+
+        void Redo()
+        {
+            _toolNote.Text = _redo.Count == 0 ? "Nothing to redo." : "Redone.";
+            if (_redo.Count == 0) return;
+            _undo.Add(_scores.ToArray());
+            var s = _redo[_redo.Count - 1]; _redo.RemoveAt(_redo.Count - 1);
+            Restore(s);
+        }
+
+        void CopyMelody()
+        {
+            CurrentLine(out int idx, out string text);
+            string score = idx < _scores.Count ? _scores[idx] : "";
+            if (score.Length == 0) { _toolNote.Text = $"Line {idx + 1} has no melody drawn yet, so there is nothing to copy."; return; }
+            _clip = score; _clipLine = idx + 1; _clipText = text.Trim();
+            _toolNote.Text = $"Copied line {_clipLine}. Click in another line (or an empty one), then Paste.";
+        }
+
+        static int Steps(string score) => score.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
+
+        // Onto the line under the caret: one block per syllable, so a longer melody loses its end and a shorter one is filled out
+        void PasteMelody()
+        {
+            if (string.IsNullOrEmpty(_clip)) { _toolNote.Text = "Nothing copied yet: click in a line's text and press Copy first."; return; }
+            CurrentLine(out int idx, out string text);
+            // An empty line has no syllables to carry a melody, so it takes the copied words as well
+            bool withWords = text.Trim().Length == 0 && _clipText.Length > 0;
+            if (withWords) ReplaceCurrentLine(_clipText);
+            if (!SetMelody(_clip) && !withWords) { _toolNote.Text = $"Line {idx + 1} already has that melody."; return; }
+            int have = _melody.Score.Count, got = Steps(_clip);
+            _toolNote.Text = withWords ? $"Pasted line {_clipLine}, words and melody, onto line {idx + 1}."
+                           : got > have ? $"Pasted onto line {idx + 1}: {got} notes, {have} syllables, last {got - have} left off."
+                           : got < have ? $"Pasted onto line {idx + 1}: {got} notes, {have} syllables, last {have - got} stay plain."
+                           : $"Pasted line {_clipLine}'s melody onto line {idx + 1}.";
+        }
+
+        // Put words on the line under the caret, leaving the caret at their end
+        void ReplaceCurrentLine(string words)
+        {
+            string all = _box.Text ?? "";
+            int caret = Math.Clamp(_box.CaretIndex, 0, all.Length);
+            int start = caret == 0 ? -1 : all.LastIndexOf('\n', caret - 1);
+            int end = all.IndexOf('\n', caret);
+            if (end < 0) end = all.Length;
+            if (end > start + 1 && all[end - 1] == '\r') end--;            // keep the line break whole
+            _box.Text = all.Substring(0, start + 1) + words + all.Substring(end);
+            _box.CaretIndex = start + 1 + words.Length;                   // setting Text sends the caret home
+            _lastLines = AllLines();
+            _rhymes = null;
+        }
+
+        // Returns false when the line already had that melody
+        bool SetMelody(string score)
+        {
+            CurrentLine(out int idx, out _);
+            if (idx >= PhraseBank.MaxPhrases) return false;
+            while (_scores.Count <= idx) _scores.Add("");
+            if (_scores[idx] == score) return false;
+            _scores[idx] = score;
+            Record();
+            _shownLine = -1;
+            UpdatePreview();
+            return true;
         }
 
         void SingLine()

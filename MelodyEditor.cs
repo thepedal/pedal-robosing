@@ -10,6 +10,8 @@
 //   drag a block's right edge      change its length
 //   double-click a block           cut it in two: the syllable is then sung over both notes
 //   right-click a block            join it back to the note before it
+//   Shift + drag up or down        move the whole line's pitch together
+// Clicking or moving a block reports it (Heard), so the window can sound that syllable.
 // With a key set (root and scale), rows outside it are dimmed, blocks outside it
 // are tinted, and a block dragged up or down lands only on notes in the key.
 // A fixed strip on the left names the notes; a marker shows where the voice is
@@ -35,6 +37,8 @@ namespace PedalRoboSing
 
         public readonly ScrollViewer View;
         public event Action Changed;
+        /// <summary>A block was clicked or its pitch moved: syllable index and the note's pitch.</summary>
+        public event Action<int, int> Heard;
 
         /// <summary>Semitone number of the note the line starts on (C-0 = 0), for the note names. -1 = unknown.</summary>
         public int BaseNote = -1;
@@ -58,6 +62,8 @@ namespace PedalRoboSing
         bool _resize;
         double _startX, _startY;
         int _startGap, _startLen, _startPitch;
+        bool _moveAll;                              // Shift held: every note of the line follows the dragged one
+        int[] _startAll = Array.Empty<int>();       // every note's pitch when the drag began, in drawing order
 
         static Brush Rgb(byte r, byte g, byte b) => new SolidColorBrush(Color.FromRgb(r, g, b));
         static readonly Brush Back = Rgb(0x2E, 0x2E, 0x2E), SharpRow = Rgb(0x25, 0x25, 0x25), RootRow = Rgb(0x3A, 0x40, 0x48);
@@ -161,6 +167,31 @@ namespace PedalRoboSing
             return pitch;
         }
 
+        // How many notes of the key lie between two pitches, signed (semitones when there is no key)
+        int Degrees(int from, int to)
+        {
+            if (!HasKey) return to - from;
+            int n = 0;
+            if (to > from) { for (int p = from + 1; p <= to; p++) if (InKey(p)) n++; }
+            else for (int p = from - 1; p >= to; p--) if (InKey(p)) n--;
+            return n;
+        }
+
+        // A pitch moved by that many notes of the key, kept on the grid
+        int StepBy(int pitch, int degrees)
+        {
+            if (!HasKey) return Math.Clamp(pitch + degrees, -Range, Range);
+            int dir = Math.Sign(degrees), p = pitch;
+            for (int left = Math.Abs(degrees); left > 0; left--)
+            {
+                int q = p + dir;
+                while (q >= -Range && q <= Range && !InKey(q)) q += dir;
+                if (q < -Range || q > Range) break;
+                p = q;
+            }
+            return p;
+        }
+
         /// <summary>Move every block that is outside the key to the nearest note in it. Returns how many moved.</summary>
         public int FitToKey()
         {
@@ -222,6 +253,14 @@ namespace PedalRoboSing
             _drag = k; _dragNote = note; _resize = edge;
             _startX = p.X; _startY = p.Y;
             _startGap = _score.Gap[k]; _startLen = _score.NoteLen(k, note); _startPitch = _score.NotePitch(k, note);
+            _moveAll = !edge && (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
+            if (_moveAll)
+            {
+                int n = 0; for (int a = 0; a < _score.Count; a++) n += _score.Notes(a);
+                _startAll = new int[n];
+                for (int a = 0, w = 0; a < _score.Count; a++) for (int b = 0; b < _score.Notes(a); b++) _startAll[w++] = _score.NotePitch(a, b);
+            }
+            Heard?.Invoke(k, _startPitch);
             _canvas.CaptureMouse();
             Redraw();
         }
@@ -242,7 +281,21 @@ namespace PedalRoboSing
                 if (Snap && dRows != 0) pitch = NearestInKey(pitch, dRows);      // a sideways drag leaves the pitch alone
             }
             if (gap == _score.Gap[_drag] && len == _score.NoteLen(_drag, _dragNote) && pitch == _score.NotePitch(_drag, _dragNote)) return;
+            bool pitchMoved = pitch != _score.NotePitch(_drag, _dragNote);
             _score.Gap[_drag] = gap; _score.SetNoteLen(_drag, _dragNote, len); _score.SetNotePitch(_drag, _dragNote, pitch);
+            if (_moveAll && pitchMoved)
+            {
+                // The rest follow by the same number of notes of the key (or semitones, with Snap off or no key)
+                bool byKey = Snap && HasKey;
+                int by = byKey ? Degrees(_startPitch, pitch) : pitch - _startPitch;
+                for (int a = 0, w = 0; a < _score.Count; a++)
+                    for (int b = 0; b < _score.Notes(a); b++, w++)
+                    {
+                        if (a == _drag && b == _dragNote) continue;
+                        _score.SetNotePitch(a, b, byKey ? StepBy(_startAll[w], by) : Math.Clamp(_startAll[w] + by, -Range, Range));
+                    }
+            }
+            if (pitchMoved) Heard?.Invoke(_drag, pitch);
             Redraw();
         }
 

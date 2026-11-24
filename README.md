@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 1.8.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 1.9.2 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 The voice is original: a formant model converted to filter coefficients as it
 plays, with no speech ROM data and no code from any other synthesiser. Word
@@ -53,6 +53,12 @@ the middle row, which is the note you play.
   the pieces to different pitches; cut again for more, up to 8 notes on one
   syllable. The pieces carry a `~` and a line ties each to the one before.
 - **Right-click** a piece to join it back to the note before it.
+- Hold **Shift** and drag a block up or down to move the whole line with it:
+  by notes of the key with Snap on, by semitones with it off.
+- The **Melody** row has **Undo** and **Redo** for melody changes, **Copy** and
+  **Paste** to put one line's melody on another (block for block), and
+  **Clear**. With **Hear** on, clicking or moving a block sings that syllable
+  at its pitch.
 - **Sing line** plays the line under the caret with its melody, from the last
   note played on track 1. An orange marker shows where the voice is, both for
   Sing line and when the pattern plays that line.
@@ -302,6 +308,23 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 `midi_to_robosing.py` beside it.
 
 ## Changes
+
+**1.9.2**
+- Paste onto an empty line brings the copied line's words as well as its
+  melody (an empty line has no syllables for a melody to sit on).
+- Shorter messages in the Melody row.
+
+**1.9.1**
+- The Melody row says what each tool did: which line was copied, where it was
+  pasted and how the syllable counts matched, and when there was nothing to
+  copy, undo or redo.
+- Copy on a line with no melody no longer makes Paste clear the target line.
+
+**1.9.0**
+- Melody tools in the phrase editor: Undo, Redo, Copy, Paste and Clear.
+- Hear: clicking or moving a block sings that syllable at its new pitch.
+- Shift + drag moves the whole line up or down, staying in the key with Snap
+  on.
 
 **1.8.0**
 - A syllable can be sung over several notes. Double-click a block to cut it,

@@ -71,7 +71,9 @@ namespace System.Windows.Threading
 }
 namespace System.Windows.Input
 {
-    public class MouseEventArgs : EventArgs { public System.Windows.Point GetPosition(System.Windows.FrameworkElement relativeTo) => default; }
+    [Flags] public enum ModifierKeys { None = 0, Alt = 1, Control = 2, Shift = 4 }
+    public static class Keyboard { public static ModifierKeys Modifiers { get; set; } }
+    public class MouseEventArgs : EventArgs { public System.Windows.Point At; public System.Windows.Point GetPosition(System.Windows.FrameworkElement relativeTo) => At; }
     public class MouseButtonEventArgs : MouseEventArgs { public int ClickCount { get; set; } public bool Handled { get; set; } }
     public delegate void MouseEventHandler(object sender, MouseEventArgs e);
     public delegate void MouseButtonEventHandler(object sender, MouseButtonEventArgs e);

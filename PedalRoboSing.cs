@@ -32,7 +32,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "1.8.0";
+        internal const string Version = "1.9.2";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;
@@ -120,6 +120,8 @@ namespace PedalRoboSing
         readonly Biquad _hp = new Biquad(), _lp1 = new Biquad(), _lp2 = new Biquad();
 
         volatile PhraseBank _bank = new PhraseBank(PhraseBank.Defaults);
+        sealed class SyllableRequest { public Utterance U; public int K, Pitch; }
+        volatile SyllableRequest _auditionSyllable;  // set by the editor when a block is clicked or moved
         volatile Utterance _audition;                // set by the editor's Speak line button
         volatile LineScore _auditionScore;           // set with it by Sing line
 
@@ -389,6 +391,13 @@ namespace PedalRoboSing
             _audition = u;
         }
 
+        /// <summary>Editor preview: sing one syllable of a line on voice 1, at a melody pitch above the last note played there.</summary>
+        public void AuditionSyllable(Utterance u, int syllable, int pitch)
+        {
+            if (u == null || syllable < 0 || syllable >= u.SylS.Length) return;
+            _auditionSyllable = new SyllableRequest { U = u, K = syllable, Pitch = pitch };
+        }
+
         /// <summary>Editor preview: speak arbitrary text on voice 1 at the last note played there.</summary>
         public void Audition(string text) { _auditionScore = null; _audition = AuditionBuild(text); }
         Utterance AuditionBuild(string text) => Planner.Build(text ?? "", (SpeakMode)Math.Clamp(Mode, 0, 2), _bank.Rhymes);
@@ -555,6 +564,14 @@ namespace PedalRoboSing
                 if (pn == Note.Off) { _voices[i].NoteOff(NoteOffMode == 1); continue; }
                 _lastNote[i] = pn;
                 StartNote(i, pn, bank);
+            }
+            var one = _auditionSyllable;
+            if (one != null)
+            {
+                _auditionSyllable = null;
+                float from = NoteMidi(_lastNote[0]);
+                float to = _keyLock ? ScaleSteps.Transpose(from, one.Pitch, keyRoot, keyMask) : from + one.Pitch;
+                _voices[0].StartSegment(one.U, one.U.SylS[one.K], one.U.SylH[one.K], one.U.SylE[one.K], -1f, to, _velocity[0] / 100f);
             }
             var aud = _audition;
             if (aud != null)
