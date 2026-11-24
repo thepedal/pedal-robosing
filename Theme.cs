@@ -89,7 +89,7 @@ namespace PedalRoboSing
             "</ResourceDictionary>";
 
         /// <summary>A dark drop-down list under a button: click an entry to choose it, click elsewhere to dismiss.</summary>
-        public static void ShowChoices(Button anchor, string[] items, int current, Action<int> pick)
+        public static void ShowChoices(Button anchor, string[] items, int current, Action<int> pick, double width = 150)
         {
             var list = new StackPanel();
             var pop = new System.Windows.Controls.Primitives.Popup
@@ -102,7 +102,7 @@ namespace PedalRoboSing
             for (int i = 0; i < items.Length; i++)
             {
                 int index = i;
-                var b = MakeButton((i == current ? "\u2022 " : "   ") + items[i], (s, e) => { pop.IsOpen = false; pick(index); }, 150, 0);
+                var b = MakeButton((i == current ? "\u2022 " : "   ") + items[i], (s, e) => { pop.IsOpen = false; pick(index); }, width, 0);
                 b.Margin = new Thickness(0, 1, 0, 1);
                 list.Children.Add(b);
             }

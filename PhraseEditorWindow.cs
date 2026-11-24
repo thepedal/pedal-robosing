@@ -25,6 +25,8 @@ namespace PedalRoboSing
         HashSet<string> _rhymes;
         readonly MelodyEditor _melody = new MelodyEditor();
         readonly List<string> _scores = new List<string>();      // one per line of the box
+        readonly List<string> _links = new List<string>();       // song timing, kept beside each line's melody
+        Button _importBtn;
         List<string> _lastLines = new List<string>();
         int _shownLine = -1;
         string _shownText;
@@ -70,7 +72,7 @@ namespace PedalRoboSing
             "Hold Shift and drag a block up or down to move the whole line with it: by notes of the key with Snap on, by semitones with it off.\n" +
             "Undo and Redo step through melody changes. Copy takes the line under the caret; Paste puts its melody on another line, block for block, or on an empty line puts its words there too. Clear removes a melody.\n" +
             "With Hear on, clicking or moving a block sings that syllable at its new pitch.\n" +
-            "Sing line plays it from the last note played on track 1. The orange marker shows where the voice is.\n" +
+            "Sing line plays it from the last note played on track 1. The orange marker shows where the voice is. Stop silences everything.\n" +
             "Drag the bar between the text and the grid to resize them.\n\n" +
             "KEY\n" +
             "Key sets the song's key. It is saved with the phrases, so loading a preset does not change it. Rows outside the key are dark and blocks outside it are red.\n" +
@@ -79,6 +81,9 @@ namespace PedalRoboSing
             "The same line on two tracks, started a third apart, sings in harmony.\n" +
             "Key Lock off: the note that starts the line moves the melody by semitones. Chromatic turns the key off.\n" +
             "The Root and Scale parameters are separate: they choose what Tune To Scale and Inflect Snap aim at.\n\n" +
+            "IMPORT MIDI\n" +
+            "Type the words first, one line of the song per line. Import MIDI then reads a tune from a MIDI file (you choose the part if there are several) and fits its notes to your syllables, line by line: " +
+            "spare notes are tied onto a syllable, and the cuts between lines fall on the rests. It sets the key and remembers when each line starts, so one note in the pattern sings the whole song.\n\n" +
             "IN THE PATTERN\n" +
             "One note with the line's Phrase number sings the whole line; the note sets the key. Every preset sings what is drawn here and only changes the sound.\n" +
             "Word and Words sing part of the line. Hold off makes the syllables short. Scan below 64 sings the line backwards.\n" +
@@ -108,11 +113,14 @@ namespace PedalRoboSing
             left.Children.Add(Theme.MakeButton("Zoom \u2212", (s, e) => _melody.Zoom(-1), 64, 0));
             left.Children.Add(Theme.MakeButton("Zoom +", (s, e) => _melody.Zoom(+1), 64));
             left.Children.Add(Theme.MakeButton("Help", (s, e) => Theme.ShowMessage(this, "Pedal RoboSing - Phrases help", Help), 64));
+            _importBtn = Theme.MakeButton("Import MIDI...", (s, e) => ImportMidi(), 110);
+            left.Children.Add(_importBtn);
             DockPanel.SetDock(left, Dock.Left);
             bar.Children.Add(left);
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             buttons.Children.Add(Theme.MakeButton("Sing line", (s, e) => SingLine()));
             buttons.Children.Add(Theme.MakeButton("Speak line", (s, e) => SpeakLine()));
+            buttons.Children.Add(Theme.MakeButton("Stop", (s, e) => _m.StopAll(), 64));
             buttons.Children.Add(Theme.MakeButton("Apply", (s, e) => Apply()));
             buttons.Children.Add(Theme.MakeButton("OK", (s, e) => { Apply(); Close(); }));
             buttons.Children.Add(Theme.MakeButton("Cancel", (s, e) => Close()));
@@ -220,6 +228,7 @@ namespace PedalRoboSing
             };
             _melody.Heard += (k, pitch) => { if (_hear && _shownU != null) _m.AuditionSyllable(_shownU, k, pitch); };
             _scores.AddRange(machine.GetScores());
+            _links.AddRange(machine.GetLinks());
             _snapshot = _scores.ToArray();
 
             _box.SelectionChanged += (s, e) => UpdatePreview();
@@ -297,7 +306,8 @@ namespace PedalRoboSing
                 ShowMelody(idx, line, u);
                 _preview.Text = $"Phrase {idx + 1}: " + (u.Phonetic.Length > 0 ? u.Phonetic : "(silent)")
                               + (u.SoundNotes.Length > 0 ? "\n" + u.SoundNotes : "")
-                              + (u.WordCount > 0 ? $"    [{u.WordCount} words, {u.SylS.Length} syllables, {u.PhS.Length} phonemes, {u.Length / 1000f:0.0} s]" : "");
+                              + (u.WordCount > 0 ? $"    [{u.WordCount} words, {u.SylS.Length} syllables, {u.PhS.Length} phonemes, {u.Length / 1000f:0.0} s]" : "")
+                              + SongNote(idx);
             }
             catch (Exception ex)
             {
@@ -320,11 +330,18 @@ namespace PedalRoboSing
             var now = AllLines();
             if (now.Count != _lastLines.Count)
             {
-                var byText = new Dictionary<string, string>();
+                var byText = new Dictionary<string, (string score, string link)>();
                 for (int i = 0; i < _lastLines.Count && i < _scores.Count; i++)
-                    if (_scores[i].Length > 0 && !byText.ContainsKey(_lastLines[i])) byText[_lastLines[i]] = _scores[i];
-                _scores.Clear();
-                foreach (var line in now) _scores.Add(byText.TryGetValue(line, out var sc) ? sc : "");
+                {
+                    string link = i < _links.Count ? _links[i] : "";
+                    if ((_scores[i].Length > 0 || link.Length > 0) && !byText.ContainsKey(_lastLines[i])) byText[_lastLines[i]] = (_scores[i], link);
+                }
+                _scores.Clear(); _links.Clear();
+                foreach (var line in now)
+                {
+                    bool had = byText.TryGetValue(line, out var kept);
+                    _scores.Add(had ? kept.score : ""); _links.Add(had ? kept.link : "");
+                }
             }
             if (now.Count != _lastLines.Count)
             {
@@ -456,8 +473,130 @@ namespace PedalRoboSing
         {
             var lines = Lines();
             var scores = new List<string>();
-            for (int i = 0; i < lines.Count; i++) scores.Add(i < _scores.Count ? _scores[i] : "");
-            _m.SetPhrases(lines, scores);
+            var links = new List<string>();
+            for (int i = 0; i < lines.Count; i++) { scores.Add(i < _scores.Count ? _scores[i] : ""); links.Add(i < _links.Count ? _links[i] : ""); }
+            _m.SetPhrases(lines, scores, links);
+        }
+
+        // ── Importing a tune ─────────────────────────────────────────────────
+        static string NoteName(int n) => n >= 0 && n < 120 ? Octaved[n % 12] + (n / 12) : "?";
+
+        // What the line knows about its place in an imported song, for the strip under the text
+        string SongNote(int idx)
+        {
+            if (idx >= _links.Count || _links[idx].Length == 0) return "";
+            PhraseBank.ParseLink(_links[idx], out int follow, out int from);
+            return "\nSong: written from " + NoteName(from) + (follow > 0 ? $"; the next line starts {follow} ticks after this one." : "; the last line of the song.");
+        }
+
+        void ImportMidi()
+        {
+            try
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Import a tune", Filter = "MIDI files (*.mid;*.midi;*.kar)|*.mid;*.midi;*.kar|All files (*.*)|*.*" };
+                if (dlg.ShowDialog(this) != true) return;
+                var info = new System.IO.FileInfo(dlg.FileName);
+                if (info.Length > MidiFile.MaxBytes) throw new FormatException("That file is too big to be a MIDI file.");
+                var parts = MidiFile.Read(System.IO.File.ReadAllBytes(dlg.FileName), out int division, out var tempos);
+                parts.RemoveAll(p => p.Notes.Count == 0);
+                if (parts.Count == 0) throw new FormatException("There are no notes in that file.");
+                if (parts.Count == 1) { Theme.ShowMessage(this, "Import MIDI", ImportNotes(parts[0], division, tempos)); return; }
+
+                // Several parts: ask which one carries the tune
+                var names = new string[parts.Count];
+                int likely = 0;
+                for (int i = 0; i < parts.Count; i++)
+                {
+                    var p = parts[i];
+                    names[i] = $"{(p.Name.Length > 0 ? p.Name : "Track " + (p.Track + 1))}, channel {p.Channel + 1}: {p.Notes.Count} notes{(p.Drums ? " (drums)" : "")}";
+                    string n = p.Name.ToLowerInvariant();
+                    if (n.Contains("vocal") || n.Contains("voice") || n.Contains("melod") || n.Contains("lead") || n.Contains("sing")) likely = i;
+                }
+                Theme.ShowChoices(_importBtn, names, likely, i => Theme.ShowMessage(this, "Import MIDI", ImportNotes(parts[i], division, tempos)), 360);
+            }
+            catch (Exception ex)
+            {
+                Theme.ShowMessage(this, "Import MIDI", "Could not import: " + ex.Message);
+            }
+        }
+
+        /// <summary>Fit one part's notes to the typed lines, apply the result to the machine, and return a report.</summary>
+        // The file's tempo, for the top of the report: the song has to run at it for the timing to match
+        string TempoLine(List<MidiTempo> tempos)
+        {
+            static string B(double bpm) => Math.Abs(bpm - Math.Round(bpm)) < 0.05 ? Math.Round(bpm).ToString("0") : bpm.ToString("0.0");
+            int song = _m.BeatsPerMin;
+            string line;
+            double first;
+            if (tempos == null || tempos.Count == 0) { first = 120; line = "BPM: the file gives no tempo (MIDI's default is 120)."; }
+            else
+            {
+                first = tempos[0].Bpm;
+                double lo = first, hi = first; int changes = 0;
+                for (int i = 1; i < tempos.Count; i++)
+                {
+                    if (Math.Abs(tempos[i].Bpm - tempos[i - 1].Bpm) > 0.05) changes++;
+                    lo = Math.Min(lo, tempos[i].Bpm); hi = Math.Max(hi, tempos[i].Bpm);
+                }
+                line = changes == 0 ? $"BPM: {B(first)}."
+                     : $"BPM: {B(first)} at the start, then {changes} tempo change{(changes == 1 ? "" : "s")} (between {B(lo)} and {B(hi)}).";
+            }
+            if (song > 0)
+                line += Math.Abs(song - first) < 0.5 ? $" This song is at {song}, which matches." : $" This song is at {song}: set it to {B(first)} to sing at the file's speed.";
+            return line + "\n";
+        }
+
+        string ImportNotes(MidiPart part, int division, List<MidiTempo> tempos = null)
+        {
+            var lines = AllLines();
+            var syl = new int[Math.Min(lines.Count, PhraseBank.MaxPhrases)];
+            int typed = 0;
+            for (int i = 0; i < syl.Length; i++)
+            {
+                syl[i] = lines[i].Trim().Length == 0 ? 0 : Planner.Build(lines[i], SpeakMode.Speak).SylS.Length;
+                if (syl[i] > 0) typed++;
+            }
+            if (typed == 0) return "Type the words first, one line of the song per line, then import the tune onto them.";
+
+            int tpb = _m.TicksPerBeat;
+            var r = MelodyImport.Run(part.Notes, division, tpb, syl, _m.KeyRootNow, _m.KeyMask);
+            if (r.FirstLine < 0) return "None of the notes could be placed on the lines.";
+
+            while (_scores.Count < lines.Count) _scores.Add("");
+            while (_links.Count < lines.Count) _links.Add("");
+            var sb = new System.Text.StringBuilder();
+            int placed = 0, without = 0;
+            for (int i = 0; i < syl.Length; i++)
+            {
+                var il = r.Lines[i];
+                if (syl[i] == 0) continue;
+                if (il == null) { _scores[i] = ""; _links[i] = ""; without++; sb.Append($"\n  Line {i + 1}: no notes left for it."); continue; }
+                _scores[i] = il.Score; _links[i] = il.Follow + "," + il.Base;
+                placed++;
+                sb.Append($"\n  Line {i + 1}: {il.Notes} note{(il.Notes == 1 ? "" : "s")} on {il.Syllables} syllable{(il.Syllables == 1 ? "" : "s")}");
+                if (il.Tied > 0) sb.Append($", {il.Tied} tied onto the syllable before");
+                if (il.Split > 0) sb.Append($", {il.Split} made by splitting a long note");
+                sb.Append($"; from {NoteName(il.Base)} at tick {il.StartTick}.");
+            }
+            if (r.KeyChanged) _m.SetKey(r.KeyRoot, r.KeyScale, _m.KeyLock);
+            _undo.Clear(); _redo.Clear(); _snapshot = _scores.ToArray();
+            Apply();
+            _shownLine = -1; _keyRoot = -1;
+            UpdatePreview();
+
+            var first = r.Lines[r.FirstLine];
+            string key = PedalRoboSingMachine.RootNames[_m.KeyRootNow] + " " + PedalRoboSingMachine.ScaleNames[_m.KeyScaleNow];
+            string head = TempoLine(tempos) +
+                $"Imported {r.UsedNotes} of {r.TotalNotes} notes onto {placed} line{(placed == 1 ? "" : "s")}" + (without > 0 ? $" ({without} left without notes)" : "") + ".\n" +
+                (r.KeyChanged ? $"Key set to {key}.\n" : $"The tune fits the key already set ({key}).\n") +
+                $"\nTO PLAY IT\nPut one note, {NoteName(first.Base)}, with Phrase {r.FirstLine + 1}, in the pattern, and play the song. " +
+                $"In the file the singing starts at tick {first.StartTick} (at {tpb} ticks per beat), so that row lines it up with the rest of the file's music. " +
+                "That one note sings every line in time. A note with a later Phrase number starts from that line. A note-off lets the current line finish and stops there.\n" +
+                "It only runs on while the song is playing: with the song stopped, a note sings its one line. Stop in this window silences everything.\n" +
+                "Play it from another note to move the whole song.\n" +
+                "\nThe import is already applied. Check each line in the grid: cut, join and drag to put right anything it guessed wrong.\n" +
+                "\nLINES";
+            return head + sb;
         }
 
         void SpeakLine()

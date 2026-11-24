@@ -29,7 +29,7 @@ namespace PedalRoboSing
     sealed class MelodyEditor
     {
         const double EdgeGrab = 8, GutterW = 46;
-        const int Range = 12;                       // semitones shown above and below the starting note
+        const int Range = 24;                       // semitones shown above and below the starting note
         const int Rows = 2 * Range + 1;
         static readonly double[] TickSizes = { 8, 12, 18, 26, 36, 48 };
         static readonly double[] RowSizes = { 12, 14, 16, 19, 22, 26 };
@@ -114,6 +114,17 @@ namespace PedalRoboSing
             _ticksPerBeat = Math.Max(1, ticksPerBeat);
             _drag = -1;
             Redraw();
+            CentreOnMelody();
+        }
+
+        // The grid is taller than its panel: bring the line's notes into the middle of the view
+        void CentreOnMelody()
+        {
+            int lo = 0, hi = 0;
+            for (int k = 0; k < _score.Count; k++)
+                for (int i = 0; i < _score.Notes(k); i++) { int p = _score.NotePitch(k, i); if (p < lo) lo = p; if (p > hi) hi = p; }
+            double view = View.ViewportHeight > 0 ? View.ViewportHeight : View.ActualHeight > 0 ? View.ActualHeight : 360;
+            View.ScrollToVerticalOffset(Math.Max(0, RowY((lo + hi) / 2) + RowH / 2 - view / 2));
         }
 
         public void Zoom(int step)

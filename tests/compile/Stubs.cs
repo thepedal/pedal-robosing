@@ -23,10 +23,14 @@ namespace BuzzGUI.Interfaces
 {
     public interface IBuzz { bool Playing { get; } }
     public interface IMachineGraph { IBuzz Buzz { get; } }
-    public interface IMachine { IMachineGraph Graph { get; } System.Collections.ObjectModel.ReadOnlyCollection<IParameterGroup> ParameterGroups { get; } }
+    public interface IMachine { Buzz.MachineInterface.IBuzzMachine ManagedMachine { get; } IMachineGraph Graph { get; } System.Collections.ObjectModel.ReadOnlyCollection<IParameterGroup> ParameterGroups { get; } }
     public interface IParameterGroup { System.Collections.ObjectModel.ReadOnlyCollection<IParameter> Parameters { get; } }
     public interface IParameter { string Name { get; } void SetValue(int track, int value); }
     public interface IMenuItem { }
+    [AttributeUsage(AttributeTargets.Class)] public class MachineGUIFactoryDecl : Attribute { public bool PreferWindowedGUI; public bool IsGUIResizable; public bool UseThemeStyles; public int Width, Height; }
+    public interface IMachineGUIHost { }
+    public interface IMachineGUI { IMachine Machine { get; set; } }
+    public interface IMachineGUIFactory { IMachineGUI CreateGUI(IMachineGUIHost host); }
 }
 namespace BuzzGUI.Common
 {
@@ -57,7 +61,14 @@ namespace System.Windows
         public event System.Windows.Input.MouseEventHandler MouseMove;
         public bool CaptureMouse() => true; public void ReleaseMouseCapture() { } }
     public class Style { }
-    public class Window : FrameworkElement { public string Title { get; set; } public System.Windows.Media.Brush Background { get; set; } public event EventHandler SourceInitialized;
+    public enum WindowStyle { None, SingleBorderWindow }
+    public delegate void DependencyPropertyChangedEventHandler(object sender, EventArgs e);
+    public class Dispatcher0 { public void BeginInvoke(Delegate d) { d.DynamicInvoke(); } }
+    public class Window : FrameworkElement { public WindowStyle WindowStyle { get; set; } public bool AllowsTransparency { get; set; } public double Opacity { get; set; } = 1;
+        public bool ShowActivated { get; set; } = true; public bool IsVisible { get; set; } public event DependencyPropertyChangedEventHandler IsVisibleChanged;
+        public Dispatcher0 Dispatcher { get; } = new Dispatcher0(); public void Hide() { IsVisible = false; Hidden++; } public int Hidden;
+        public void FakeShow() { IsVisible = true; IsVisibleChanged?.Invoke(this, EventArgs.Empty); }
+        public string Title { get; set; } public System.Windows.Media.Brush Background { get; set; } public event EventHandler SourceInitialized;
         public WindowStartupLocation WindowStartupLocation { get; set; } public bool ShowInTaskbar { get; set; } public object Content { get; set; }
         public Window Owner { get; set; } public event EventHandler Closed; public void Show() { } public bool Activate() => true; public void Close() { }
         public ResourceDictionary Resources { get; } = new ResourceDictionary();
@@ -86,6 +97,10 @@ namespace System.Windows.Media
     public class Brush { }
     public static class Brushes { public static Brush DimGray => null; public static Brush Gray => null; }
 }
+namespace Microsoft.Win32
+{
+    public class OpenFileDialog { public string Title { get; set; } public string Filter { get; set; } public string FileName { get; set; } public bool? ShowDialog(System.Windows.Window owner) => false; }
+}
 namespace System.Windows.Controls.Primitives
 {
     public enum PlacementMode { Bottom, Top }
@@ -95,6 +110,7 @@ namespace System.Windows.Controls.Primitives
 namespace System.Windows.Controls
 {
     using System.Windows.Media;
+    public class UserControl : System.Windows.FrameworkElement { public object Content { get; set; } }
     public enum Dock { Left, Top, Right, Bottom }
     public enum Orientation { Horizontal, Vertical }
     public enum ScrollBarVisibility { Disabled, Auto }
@@ -107,7 +123,7 @@ namespace System.Windows.Controls
     public enum GridResizeBehavior { BasedOnAlignment, CurrentAndNext, PreviousAndCurrent, PreviousAndNext }
     public class GridSplitter : System.Windows.FrameworkElement { public GridResizeDirection ResizeDirection { get; set; } public GridResizeBehavior ResizeBehavior { get; set; } public Brush Background { get; set; } }
     public class Canvas : Panel { public static void SetLeft(FrameworkElement e, double v) { } public static void SetTop(FrameworkElement e, double v) { } }
-    public class ScrollViewer : FrameworkElement { public object Content { get; set; } public ScrollBarVisibility HorizontalScrollBarVisibility { get; set; }
+    public class ScrollViewer : FrameworkElement { public double ViewportHeight => 0; public double ActualHeight => 0; public void ScrollToVerticalOffset(double y) { } public object Content { get; set; } public ScrollBarVisibility HorizontalScrollBarVisibility { get; set; }
         public ScrollBarVisibility VerticalScrollBarVisibility { get; set; } }
     public class Border : FrameworkElement { public Thickness Padding { get; set; } public Brush Background { get; set; } public Brush BorderBrush { get; set; } public Thickness BorderThickness { get; set; }
         public CornerRadius CornerRadius { get; set; } public FrameworkElement Child { get; set; } }

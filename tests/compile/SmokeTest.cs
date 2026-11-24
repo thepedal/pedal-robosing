@@ -19,7 +19,13 @@ class P : IParameter { public string Name { get; set; } public int Last = -1; pu
 class PG : IParameterGroup { public System.Collections.ObjectModel.ReadOnlyCollection<IParameter> Parameters { get; set; } }
 class FakeMachine : IMachine
 {
-    public IMachineGraph Graph => null;
+    public bool IsPlaying;
+    public Buzz.MachineInterface.IBuzzMachine ManagedMachine { get; set; }
+    sealed class B : IBuzz { public FakeMachine M; public bool Playing => M.IsPlaying; }
+    sealed class G : IMachineGraph { public IBuzz Buzz { get; set; } }
+    readonly G _graph;
+    public FakeMachine() { _graph = new G { Buzz = new B { M = this } }; }
+    public IMachineGraph Graph => _graph;
     public System.Collections.ObjectModel.ReadOnlyCollection<IParameterGroup> ParameterGroups { get; set; }
 }
 
@@ -65,6 +71,8 @@ static class Smoke
 
         // Syllable mode, Hold on: sustains until note-off, then finishes and goes idle
         var m = new PedalRoboSingMachine(new Host());
+        Console.WriteLine($"a new machine has {m.GetPhrases().Length} phrases (want 0)");
+        m.SetPhrases(PhraseBank.Defaults);
         m.SetPhrase(8, 0); m.SetNote(new Note(0x34), 0);
         double r1 = Run(m, 1.0, out bool a1);
         m.SetNote(new Note(Note.Off), 0);
@@ -82,6 +90,7 @@ static class Smoke
         {
             var x = new PedalRoboSingMachine(new Host()) { PlayMode = mode, Tune = 100, TuneTo = mode % 2, Scale = 6, ConsTune = 100,
                 VibDepth = 40, Portamento = 50, ReactLevel = 127, ReactTune = 0, ReactSize = 127, ReactRing = 127, ReactVib = 127, ReactRhyme = 127, ReactAllit = 0, Glide = mode * 20, InflectSnap = mode % 2, Scan = mode == 4 ? 80 : 64, Mouth = mode == 1 ? 1 : 0 };
+            x.SetPhrases(PhraseBank.Defaults);
             x.SetPhrase(8, 0); x.SetPhrase(8, 1);
             double e = 0;
             for (int k = 0; k < 8; k++)

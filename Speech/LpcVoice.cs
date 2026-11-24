@@ -104,7 +104,7 @@ namespace PedalRoboSing.Speech
         LineScore _score;                       // the line's melody: timing in Line mode, pitch in every mode
         int _lineStep, _lineFirst, _lineLast, _lineCount, _sylCur;
         bool _lineRev;
-        float _lineOffTicks;
+        float _lineOffTicks, _lineLead;
         float _lineClock, _lineNom, _lineNextNom, _lineWait, _lineBase;
         bool _resting, _vowelSeen, _lineSettled;
         /// <summary>Test hook: called with (syllable, ms since the line started) when a syllable's vowel begins.</summary>
@@ -166,8 +166,13 @@ namespace PedalRoboSing.Speech
             StartLine(u, score, 0, (u?.SylS.Length ?? 0) - 1, false, midi, amp);
 
         /// <summary>Sing syllables first..last of the line; backwards = last syllable first, each still sung forwards.</summary>
-        public void StartLine(Utterance u, LineScore score, int first, int last, bool backwards, float midi, float amp) =>
-            Start(new Req { Kind = Kind.Line, U = u, Score = score, I0 = first, I1 = last, Rev = backwards, Midi = midi, Amp = amp }, false);
+        /// <param name="leadMs">Started this long before the line is due, so the first syllable's consonants can come ahead of its beat.</param>
+        public void StartLine(Utterance u, LineScore score, int first, int last, bool backwards, float midi, float amp, float leadMs = 0f) =>
+            Start(new Req { Kind = Kind.Line, U = u, Score = score, I0 = first, I1 = last, Rev = backwards, Midi = midi, Amp = amp, A = Math.Max(0f, leadMs) }, false);
+
+        /// <summary>How long before its beat the first syllable of a line wants to start, at the current speed.</summary>
+        public static float LeadFor(Utterance u, float speed) =>
+            u != null && u.SylS.Length > 0 ? (u.SylV[0] - u.SylS[0]) / Math.Max(0.05f, speed) : 0f;
 
         public void StartFollow(LpcVoice leader, float midi, float amp) =>
             Start(new Req { Kind = Kind.Follow, U = Utterance.Empty, Leader = leader, Midi = midi, Amp = amp }, true);
@@ -272,7 +277,8 @@ namespace PedalRoboSing.Speech
                     _lineCount = n > 0 ? _lineLast - _lineFirst + 1 : 0;
                     _lineRev = r.Rev;
                     _lineClock = 0f; _lineStep = 0; _resting = false;
-                    _lineNom = StepGap(0) * TickMs;
+                    _lineLead = r.A;
+                    _lineNom = StepGap(0) * TickMs + _lineLead;
 
                     // Where this run sits on the editor's grid, for the marker
                     int ticks = 0;
@@ -295,7 +301,7 @@ namespace PedalRoboSing.Speech
         {
             ticks = -1f;
             if (!IsActive || _kind != Kind.Line || !_speaking || _u.Phonetic != phonetic) return false;
-            float run = _lineClock / Math.Max(1f, TickMs);
+            float run = Math.Max(0f, _lineClock - _lineLead) / Math.Max(1f, TickMs);
             ticks = _lineRev ? Math.Max(0f, _lineOffTicks - run) : _lineOffTicks + run;
             return true;
         }

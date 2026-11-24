@@ -38,7 +38,7 @@ static class SongPlayer
                 case "M":
                 {
                     var h = new Host(); h.MasterInfo.SamplesPerTick = Tick;
-                    machines[f[1]] = new PedalRoboSingMachine(h);
+                    machines[f[1]] = new PedalRoboSingMachine(h); machines[f[1]].SetPhrases(PhraseBank.Defaults);
                     amps[f[1]] = float.Parse(f[2], System.Globalization.CultureInfo.InvariantCulture);
                     phrases[f[1]] = new List<string>();
                     break;

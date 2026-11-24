@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 1.9.2 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 2.0.3 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 The voice is original: a formant model converted to filter coefficients as it
 plays, with no speech ROM data and no code from any other synthesiser. Word
@@ -18,10 +18,14 @@ dictionary doesn't have.
 ## Quick start
 
 1. Build (see below), restart ReBuzz, add **Pedal RoboSing** from the generators.
-2. Right-click it, **Edit Phrases...**, and type one phrase per line.
-3. Put notes in the pattern. Each note sings the next syllable of Phrase 1 and
-   holds it until a note-off or the next note.
-4. Turn **Tune** up and listen to the vowels lock onto the note's overtones.
+2. **Double-click** the machine to open the phrase editor (also on the
+   right-click menu as **Edit Phrases...**). It starts empty: type one phrase
+   per line. The parameter window is on the right-click menu, **Parameters**.
+3. Draw a melody for the line in the grid, or leave it flat, and press
+   **Sing line** to hear it.
+4. In the pattern put one note with the line's Phrase number. It sings the
+   whole line; the note sets the key.
+5. Try the presets: each sings the same line with a different voice.
 
 ## The three ideas
 
@@ -85,6 +89,39 @@ Melodies are saved with the song. If you edit a line's words its blocks are
 kept in order; if the syllable count changes, blocks are added or dropped at
 the end. A melody belongs to the Speak text mode; in Spell modes Line uses the
 plain two-ticks melody.
+
+### Importing a tune (v2.0)
+
+Type the words first, one line of the song per line. Then **Import MIDI...**
+reads a tune from a MIDI file and fits it to them:
+
+- If the file has several parts you choose the one that carries the tune.
+  Where notes sound together the highest is taken.
+- Notes are snapped to song ticks (at the song's ticks per beat when you
+  import), so triplets and swing are rounded.
+- The tune is cut into as many stretches as you typed lines, so that each line
+  gets about as many notes as it has syllables and the cuts fall on the rests.
+- In a line with spare notes, the ones that run into the note before them are
+  tied onto its syllable. In a line short of notes, the longest are split.
+- The key is set from the tune, unless the tune already fits the key you have.
+- Each line remembers the note it was written from and how long after it the
+  next line starts.
+
+The report tells you what to put in the pattern: **one note**, with the first
+line's Phrase number. It sings that line and every line after it, each at its
+time, and each line's opening consonants come early so its first vowel lands
+on the beat. A note with a later Phrase number starts from that line. A
+note-off lets the current line finish and stops there; stopping the song
+stops it at once. The song only runs on from line to line **while ReBuzz is
+playing**: with the transport stopped, a note (typed in the pattern, from a
+MIDI keyboard, or Sing line) sings its one line. **Stop** in the editor
+silences everything.
+Play it from another note to move the whole song; with Key Lock on it stays
+in key. Everything the import did is ordinary melody: check each line in the
+grid and put right what it guessed wrong.
+
+The grid now shows two octaves either side of the starting note and opens
+scrolled to the line's notes.
 
 **The key (v1.6, v1.7).** The **Key** bar above the grid sets the song's key:
 a root and a scale. It is saved with the phrases, so loading a preset does not
@@ -308,6 +345,29 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 `midi_to_robosing.py` beside it.
 
 ## Changes
+
+**2.0.3**
+- A new machine starts with no words in the editor (it used to start with ten
+  sample phrases). Saved songs keep theirs.
+- A double-click on the machine opens the phrase editor. The parameter window
+  is on the right-click menu.
+
+**2.0.2**
+- The import report starts with the file's BPM (and any tempo changes), and
+  says whether the song's tempo matches it.
+
+**2.0.1**
+- An imported song runs on from line to line only while ReBuzz is playing.
+  With the transport stopped, a note sings one line and stops.
+- Stop button in the phrase editor: silences every voice and anything queued.
+- Sing line, Speak line and Hear take track 1 away from a song in progress.
+
+**2.0.0**
+- Import MIDI: fits the notes of a tune to typed lines, sets the key, and
+  remembers when each line starts.
+- Song timing: a line that knows what follows sings on into the next lines, so
+  one note in the pattern sings a whole song. Saved with the song.
+- The melody grid covers two octaves either side of the starting note.
 
 **1.9.2**
 - Paste onto an empty line brings the copied line's words as well as its

@@ -298,7 +298,107 @@ static class CanonDemo
                 Do("Redo"); Console.WriteLine("  after one redo     : " + string.Join(" | ", scores));
             }
 
+            // 12. Import a tune from a MIDI file onto typed lines, then sing the whole song from one note
+            {
+                byte[] Smf()
+                {
+                    var f = new List<byte>();
+                    void Be(int v, int n) { for (int i = n - 1; i >= 0; i--) f.Add((byte)(v >> (8 * i))); }
+                    void Chunk(string tag, List<byte> body) { f.AddRange(System.Text.Encoding.ASCII.GetBytes(tag)); Be(body.Count, 4); f.AddRange(body); }
+                    void Var(List<byte> o, int v) { var st = new Stack<byte>(); st.Push((byte)(v & 0x7F)); while ((v >>= 7) > 0) st.Push((byte)(0x80 | (v & 0x7F))); o.AddRange(st); }
+                    List<byte> Track(string name, int ch, (double at, double len, int pitch)[] notes)
+                    {
+                        var o = new List<byte>(); Var(o, 0); o.Add(0xFF); o.Add(0x03); o.Add((byte)name.Length); o.AddRange(System.Text.Encoding.ASCII.GetBytes(name));
+                        var ev = new List<(int t, bool on, int p)>();
+                        foreach (var (at, len, pitch) in notes) { ev.Add(((int)(at * 480), true, pitch)); ev.Add(((int)((at + len) * 480), false, pitch)); }
+                        ev.Sort((x, y) => x.t != y.t ? x.t.CompareTo(y.t) : x.on.CompareTo(y.on));
+                        int now = 0;
+                        foreach (var (t, on, pch) in ev) { Var(o, t - now); now = t; o.Add((byte)((on ? 0x90 : 0x80) | ch)); o.Add((byte)pch); o.Add(on ? (byte)100 : (byte)0); }
+                        Var(o, 0); o.Add(0xFF); o.Add(0x2F); o.Add(0);
+                        return o;
+                    }
+                    var head = new List<byte>(); foreach (int v in new[] { 1, 3, 480 }) { head.Add((byte)(v >> 8)); head.Add((byte)v); }
+                    Chunk("MThd", head);
+                    var tempo = new List<byte>();
+                    foreach (var (dt, us) in new[] { (0, 631579), (480 * 16, 600000) }) { Var(tempo, dt); tempo.AddRange(new byte[] { 0xFF, 0x51, 3, (byte)(us >> 16), (byte)(us >> 8), (byte)us }); }
+                    Var(tempo, 0); tempo.AddRange(new byte[] { 0xFF, 0x2F, 0 });
+                    Chunk("MTrk", tempo);
+                    Chunk("MTrk", Track("Lead Vocal", 0, new[] {
+                        (4.0, .5, 72), (4.5, .5, 74), (5.0, .5, 76), (5.5, .5, 77), (6.0, .5, 79), (6.5, .5, 77), (7.0, .25, 76), (7.25, .75, 72),
+                        (12.0, 1.0, 67), (13.0, 1.0, 69), (14.0, .5, 71), (14.5, .5, 72), (15.0, 1.0, 74),
+                        (20.0, 2.0, 72) }));
+                    Chunk("MTrk", Track("Kit", 9, new[] { (0.0, .25, 36), (1.0, .25, 38), (2.0, .25, 36) }));
+                    return f.ToArray();
+                }
+                var parts = MidiFile.Read(Smf(), out int div, out var tempos);
+                Console.WriteLine($"  tempo marks: {string.Join(", ", tempos.Select(q => $"{q.Bpm:0.0} at tick {q.Tick}"))}   (want 95.0 at 0, 100.0 at 7680)");
+                Console.WriteLine($"MIDI file: division {div}, parts: {string.Join("; ", parts.Select(q => $"{q.Name} ch{q.Channel + 1} {q.Notes.Count} notes{(q.Drums ? " drums" : "")}"))}");
+                try { MidiFile.Read(new byte[40], out _); } catch (FormatException ex) { Console.WriteLine("  a bad file is refused: " + ex.Message); }
+
+                var transport = new FakeMachine { IsPlaying = true, ParameterGroups = new System.Collections.ObjectModel.ReadOnlyCollection<BuzzGUI.Interfaces.IParameterGroup>(new BuzzGUI.Interfaces.IParameterGroup[0]) };
+                var hi = new Host { Machine = transport }; hi.MasterInfo.SamplesPerTick = Tick;
+                var mi = new PedalRoboSingMachine(hi) { Tune = 0, VibDepth = 0, Portamento = 0, Glide = 0, ConsTune = 0 };
+                mi.SetPhrases(new[] { "Seven silver circuits sing.", "", "I am a robot.", "Hello." });
+                var wi = new PhraseEditorWindow(mi);
+                var rep = (string)typeof(PhraseEditorWindow).GetMethod("ImportNotes", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(wi, new object[] { parts[0], div, tempos });
+                Console.WriteLine("  --- report ---\n  " + rep.Replace("\n", "\n  ") + "\n  --------------");
+                Console.WriteLine("  melodies: " + string.Join(" | ", mi.GetScores()));
+                Console.WriteLine("  timing  : " + string.Join(" | ", mi.GetLinks()) + "   (want 32,60 | | 32,60 | 0,60: lines 32 ticks apart, all from C-5)");
+
+                // One note, C-5 with Phrase 1: line 1 at tick 0, line 3 at tick 32, line 4 at tick 64
+                mi.SetNote(new Note(0x51), 0);
+                var song = Play(mi, 80, out _);
+                Play(mi, 16, out bool stillOn);
+                string Lv(double a, double b) => Rms(song, (int)(a * Tick), (int)(b * Tick)).ToString("0.000");
+                Console.WriteLine($"  sung from one note: line 1 (ticks 1-13) {Lv(1, 13)}, rest (22-30) {Lv(22, 30)}, line 2 (33-46) {Lv(33, 46)}, rest (54-62) {Lv(54, 62)}, line 3 (65-71) {Lv(65, 71)}, after (76-80) {Lv(76, 80)}; stops by itself {!stillOn}");
+                double Onset(float[] x, double fromTick) { for (int i = (int)(fromTick * Tick); i < x.Length; i++) if (Math.Abs(x[i]) > 0.03) return i / (double)Tick; return -1; }
+                Console.WriteLine($"  first sound of line 2 (opens on a vowel) at tick {Onset(song, 24):0.00} (want 32), of line 3 (opens on a consonant) at {Onset(song, 56):0.00} (want a little before 64)");
+                // Starting from the second sung line, and a note-off stopping the song
+                mi.SetPhrase(3, 0); mi.SetNote(new Note(0x51), 0);
+                var late = Play(mi, 44, out _);
+                Console.WriteLine($"  from Phrase 3: its line (1-13) {Rms(late, Tick, 13 * Tick):0.000}, the next after 32 ticks (33-39) {Rms(late, 33 * Tick, 39 * Tick):0.000}");
+                mi.SetPhrase(1, 0); mi.SetNote(new Note(0x51), 0); Play(mi, 4, out _); mi.SetNote(new Note(Note.Off), 0);
+                var cut = Play(mi, 44, out _);
+                Console.WriteLine($"  note-off after 4 ticks: this line finishes (2-9) {Rms(cut, 2 * Tick, 9 * Tick):0.000}, nothing follows (30-42) {Rms(cut, 30 * Tick, 42 * Tick):0.000}");
+                // With the transport stopped a note sings its one line; Stop silences a song in progress
+                transport.IsPlaying = false; Play(mi, 2, out _);
+                mi.SetNote(new Note(0x51), 0);
+                var idle = Play(mi, 44, out _);
+                Console.WriteLine($"  transport stopped: the line itself (1-13) {Rms(idle, Tick, 13 * Tick):0.000}, nothing follows (33-42) {Rms(idle, 33 * Tick, 42 * Tick):0.000}");
+                transport.IsPlaying = true; Play(mi, 1, out _);
+                mi.SetNote(new Note(0x51), 0); Play(mi, 4, out _); mi.StopAll();
+                var stopped = Play(mi, 44, out _);
+                Console.WriteLine($"  Stop after 4 ticks: (1-9) {Rms(stopped, Tick, 9 * Tick):0.000}, (33-42) {Rms(stopped, 33 * Tick, 42 * Tick):0.000}   (want silence in both)");
+                transport.IsPlaying = false; Play(mi, 1, out _); transport.IsPlaying = true; Play(mi, 1, out _);
+                mi.SetNote(new Note(0x51), 0); Play(mi, 4, out _); transport.IsPlaying = false;
+                var halted = Play(mi, 44, out _);
+                Console.WriteLine($"  transport stopped mid-song: (1-9) {Rms(halted, Tick, 9 * Tick):0.000}, (26-40) {Rms(halted, 26 * Tick, 40 * Tick):0.000}   (want silence in both)");
+                var ser2 = new System.Xml.Serialization.XmlSerializer(typeof(RoboSingState));
+                var sw2 = new System.IO.StringWriter(); ser2.Serialize(sw2, mi.MachineState);
+                var back = new PedalRoboSingMachine(new Host()); back.MachineState = (RoboSingState)ser2.Deserialize(new System.IO.StringReader(sw2.ToString()));
+                Console.WriteLine("  saved and loaded timing: " + string.Join(" | ", back.GetLinks()));
+            }
+
+            // 13. A double-click reaches the editor: ReBuzz shows the host window, the launcher hides it and opens the editor
+            {
+                var fm = new FakeMachine { ParameterGroups = new System.Collections.ObjectModel.ReadOnlyCollection<BuzzGUI.Interfaces.IParameterGroup>(new BuzzGUI.Interfaces.IParameterGroup[0]) };
+                var hd = new Host { Machine = fm };
+                var md = new PedalRoboSingMachine(hd); fm.ManagedMachine = md;
+                var hostWin = new HostWin();
+                var gui = new PedalRoboSingGuiFactory().CreateGUI(hostWin); gui.Machine = fm;
+                object Ed() => typeof(PedalRoboSingMachine).GetField("_editor", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(md);
+                bool wasOpen = Ed() != null;
+                hostWin.FakeShow();
+                Console.WriteLine($"double-click: host made invisible first (opacity {hostWin.Opacity}, no frame {hostWin.WindowStyle == System.Windows.WindowStyle.None}); editor open before {wasOpen}, after {Ed() != null}; host hidden again {!hostWin.IsVisible}");
+                var firstEd = Ed(); hostWin.FakeShow();
+                Console.WriteLine($"a second double-click keeps the same editor window: {ReferenceEquals(firstEd, Ed())}; attribute asks for a window of its own: {typeof(PedalRoboSingGuiFactory).GetCustomAttribute<BuzzGUI.Interfaces.MachineGUIFactoryDecl>().PreferWindowedGUI}");
+                var textBox = (System.Windows.Controls.TextBox)typeof(PhraseEditorWindow).GetField("_box", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(firstEd);
+                Console.WriteLine($"a new machine's editor text is empty: '{textBox.Text}'");
+            }
+
             Console.WriteLine($"Line from the second word only: {n2 / (119.05 * 16):0.0} ticks (want about 16)");
         }
     }
 }
+
+class HostWin : System.Windows.Window, BuzzGUI.Interfaces.IMachineGUIHost { }

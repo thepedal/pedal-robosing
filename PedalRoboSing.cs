@@ -32,7 +32,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "1.9.2";
+        internal const string Version = "2.0.3";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;
@@ -119,7 +119,7 @@ namespace PedalRoboSing
         readonly LpcVoice[] _voices = new LpcVoice[MaxVoices];
         readonly Biquad _hp = new Biquad(), _lp1 = new Biquad(), _lp2 = new Biquad();
 
-        volatile PhraseBank _bank = new PhraseBank(PhraseBank.Defaults);
+        volatile PhraseBank _bank = new PhraseBank(Array.Empty<string>());   // a new machine starts with no words
         sealed class SyllableRequest { public Utterance U; public int K, Pitch; }
         volatile SyllableRequest _auditionSyllable;  // set by the editor when a block is clicked or moved
         volatile Utterance _audition;                // set by the editor's Speak line button
@@ -142,6 +142,59 @@ namespace PedalRoboSing
         int _tail;
 
         PhraseEditorWindow _editor;
+
+        // ── Song timing: a line that knows when the next one starts ──────────
+        // An imported song gives each line the ticks to the next line and the note it
+        // starts on. One note on a line then sings that line and every one after it,
+        // each at its time. A new note on the track starts afresh; a note-off, or
+        // stopping the song, lets the current line finish and sings no more.
+        readonly int[] _chainNext = { -1, -1, -1, -1, -1, -1, -1, -1 };   // phrase index due next on each track, -1 = none
+        readonly float[] _chainClock = new float[MaxVoices];              // ticks since the current line's start
+        readonly float[] _chainDue = new float[MaxVoices];                // ticks at which the next line starts
+        readonly float[] _chainNote = new float[MaxVoices];               // the note the next line starts on
+
+        // Only while the song plays: a note tried out with the transport stopped (typed in the
+        // pattern editor, a MIDI key, the editor's own previews) sings its one line and stops.
+        void ArmChain(int track, int index, float note, float clock, PhraseBank bank)
+        {
+            _chainNext[track] = -1;
+            if (!_wasPlaying) return;
+            int follow = bank.Follow(index);
+            if (follow <= 0) return;
+            int next = bank.NextSung(index);
+            if (next < 0) return;
+            int a = bank.Base(index), b = bank.Base(next);
+            _chainNext[track] = next;
+            _chainClock[track] = clock;
+            _chainDue[track] = follow;
+            _chainNote[track] = a >= 0 && b >= 0 ? note + (b - a) : note;   // each line from its own starting note, moved with the one played
+        }
+
+        // Called once a buffer, before rendering: start any line that has come due
+        void RunChains(PhraseBank bank, float tickMs, float speed, float bufferTicks)
+        {
+            for (int i = 0; i < MaxVoices; i++)
+            {
+                int next = _chainNext[i];
+                if (next < 0) continue;
+                Due(i, next, bank, tickMs, speed);
+                if (_chainNext[i] >= 0) _chainClock[i] += bufferTicks;
+            }
+        }
+
+        void Due(int i, int next, PhraseBank bank, float tickMs, float speed)
+        {
+            if (next >= bank.Count || PlayMode != 5) { _chainNext[i] = -1; return; }
+            var u = bank.Get(next + 1, Mode);
+            // Start early by the first syllable's consonants, so its vowel lands on the line's beat
+            float leadMs = LpcVoice.LeadFor(u, speed), left = (_chainDue[i] - _chainClock[i]) * tickMs;
+            if (left > leadMs) return;
+            float note = _chainNote[i];
+            int last = u.SylS.Length - 1;
+            if (last >= 0)
+                _voices[i].StartLine(u, Mode == 0 ? bank.ScoreFor(next + 1) : null, 0, last, Scan < 64, note, _velocity[i] / 100f, Math.Max(0f, left));
+            ArmChain(i, next, note, _chainClock[i] - _chainDue[i], bank);
+        }
 
         public PedalRoboSingMachine(IBuzzMachineHost host)
         {
@@ -380,8 +433,10 @@ namespace PedalRoboSing
         public string[] GetPhrases() => (string[])_bank.Texts.Clone();
 
         public string[] GetScores() => (string[])_bank.ScoreTexts.Clone();
+        public string[] GetLinks() => (string[])_bank.LinkTexts.Clone();
 
-        public void SetPhrases(IReadOnlyList<string> lines, IReadOnlyList<string> scores = null) => _bank = new PhraseBank(lines, scores);
+        public void SetPhrases(IReadOnlyList<string> lines, IReadOnlyList<string> scores = null, IReadOnlyList<string> links = null) =>
+            _bank = new PhraseBank(lines, scores, links);
 
         /// <summary>Editor preview: sing a line with its melody on voice 1, from the last note played there.</summary>
         public void AuditionLine(string text, string score)
@@ -390,6 +445,10 @@ namespace PedalRoboSing
             _auditionScore = LineScore.Parse(score, u.SylS.Length);
             _audition = u;
         }
+
+        volatile bool _stopAll;
+        /// <summary>Silence every voice and drop anything queued to follow (the editor's Stop button).</summary>
+        public void StopAll() => _stopAll = true;
 
         /// <summary>Editor preview: sing one syllable of a line on voice 1, at a melody pitch above the last note played there.</summary>
         public void AuditionSyllable(Utterance u, int syllable, int pitch)
@@ -409,14 +468,15 @@ namespace PedalRoboSing
                 var s = new RoboSingState();
                 s.Phrases.AddRange(_bank.Texts);
                 s.Scores.AddRange(_bank.ScoreTexts);
-                s.Version = 2;
+                s.Links.AddRange(_bank.LinkTexts);
+                s.Version = 3;
                 s.KeyRoot = _keyRoot; s.KeyScale = _keyScale; s.KeyLock = _keyLock;
                 return s;
             }
             set
             {
                 if (value?.Phrases == null) return;
-                _bank = new PhraseBank(value.Phrases, value.Scores);
+                _bank = new PhraseBank(value.Phrases, value.Scores, value.Links);
                 _keyRoot = value.KeyRoot < 0 ? -1 : Math.Clamp(value.KeyRoot, 0, 11);
                 _keyScale = value.KeyScale < 0 ? -1 : Math.Clamp(value.KeyScale, 0, ScaleMasks.Length - 1);
                 _keyLock = value.KeyLock;
@@ -437,6 +497,7 @@ namespace PedalRoboSing
             var v = _voices[i];
             float midi = NoteMidi(note), amp = _velocity[i] / 100f;
 
+            _chainNext[i] = -1;                              // a new note on the track always starts afresh
             if (Mouth == 1 && i > 0) { v.StartFollow(_voices[0], midi, amp); return; }
 
             var u = bank.Get(_phrase[i], Mode);
@@ -487,6 +548,8 @@ namespace PedalRoboSing
                     u.Range(false, w0, w1, out int first, out int count);
                     if (count == 0) return;
                     v.StartLine(u, sc, first, first + count - 1, Scan < 64, midi, amp);
+                    // The whole line, and it knows what follows: sing on from here
+                    if (first == 0 && count == u.SylS.Length) ArmChain(i, bank.IndexOf(_phrase[i]), midi, 0f, bank);
                     break;
                 }
                 default:
@@ -526,7 +589,16 @@ namespace PedalRoboSing
             try { playing = host?.Machine?.Graph?.Buzz?.Playing ?? false; } catch { }
             if (_wasPlaying && !playing)
                 foreach (var v in _voices) v.Kill();
+            if (!playing)
+                for (int i = 0; i < MaxVoices; i++) _chainNext[i] = -1;
             _wasPlaying = playing;
+            if (_stopAll)
+            {
+                _stopAll = false;
+                _audition = null; _auditionScore = null; _auditionSyllable = null;
+                foreach (var v in _voices) v.Kill();
+                for (int i = 0; i < MaxVoices; i++) { _chainNext[i] = -1; _pendingNote[i] = 0; }
+            }
 
             // Per-buffer voice settings
             var bank = _bank;
@@ -561,14 +633,16 @@ namespace PedalRoboSing
                 byte pn = _pendingNote[i];
                 if (pn == 0) continue;
                 _pendingNote[i] = 0;
-                if (pn == Note.Off) { _voices[i].NoteOff(NoteOffMode == 1); continue; }
+                if (pn == Note.Off) { _chainNext[i] = -1; _voices[i].NoteOff(NoteOffMode == 1); continue; }
                 _lastNote[i] = pn;
                 StartNote(i, pn, bank);
             }
+            RunChains(bank, tickMs, speed, n * 1000f / (sr * Math.Max(0.001f, tickMs)));
             var one = _auditionSyllable;
             if (one != null)
             {
                 _auditionSyllable = null;
+                _chainNext[0] = -1;                          // the editor has taken this voice
                 float from = NoteMidi(_lastNote[0]);
                 float to = _keyLock ? ScaleSteps.Transpose(from, one.Pitch, keyRoot, keyMask) : from + one.Pitch;
                 _voices[0].StartSegment(one.U, one.U.SylS[one.K], one.U.SylH[one.K], one.U.SylE[one.K], -1f, to, _velocity[0] / 100f);
@@ -578,6 +652,7 @@ namespace PedalRoboSing
             {
                 var sc = _auditionScore;
                 _audition = null; _auditionScore = null;
+                _chainNext[0] = -1;
                 if (sc != null) _voices[0].StartLine(aud, sc, 0, aud.SylS.Length - 1, Scan < 64, NoteMidi(_lastNote[0]), _velocity[0] / 100f);
                 else _voices[0].StartPhrase(aud, 0f, aud.Length, NoteMidi(_lastNote[0]), _velocity[0] / 100f);
             }
@@ -648,6 +723,12 @@ namespace PedalRoboSing
         }
 
         /// <summary>Rows per beat, for the melody editor's grid (4 until the host has told us).</summary>
+        /// <summary>The song's tempo, or 0 when the host does not say.</summary>
+        public int BeatsPerMin
+        {
+            get { try { return host?.MasterInfo?.BeatsPerMin ?? 0; } catch { return 0; } }
+        }
+
         public int TicksPerBeat
         {
             get { try { int t = host?.MasterInfo?.TicksPerBeat ?? 4; return t > 0 ? t : 4; } catch { return 4; } }
@@ -664,7 +745,8 @@ namespace PedalRoboSing
         /// <summary>The last note played on track 1 as a semitone number (C-0 = 0): the key Sing line uses.</summary>
         public int LastNoteNumber => (int)NoteMidi(_lastNote[0]);
 
-        void OpenEditor()
+        /// <summary>Open the phrase editor, or bring it forward (right-click menu, and a double-click on the machine).</summary>
+        internal void OpenEditor()
         {
             if (_editor != null) { _editor.Activate(); return; }
             _editor = new PhraseEditorWindow(this);
