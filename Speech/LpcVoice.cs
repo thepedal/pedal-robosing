@@ -827,9 +827,13 @@ namespace PedalRoboSing.Speech
             if (_consEff > 0f)
             {
                 float d = Math.Clamp(ChipRate / (_f0 * ConsRatio), 2f, _comb.Length - 2);
+                if (!(d >= 2f)) d = 2f;                                // a pitch that is not a number must not reach the index
                 float rp = _combW - d;
                 if (rp < 0f) rp += _comb.Length;
-                int i0 = (int)rp, i1 = i0 + 1 == _comb.Length ? 0 : i0 + 1;
+                int i0 = (int)rp;
+                // A read point a hair below zero rounds up to exactly the buffer length when the length is added
+                if ((uint)i0 >= (uint)_comb.Length) { i0 = 0; rp = 0f; }
+                int i1 = i0 + 1 == _comb.Length ? 0 : i0 + 1;
                 float fr = rp - i0;
                 float delayed = _comb[i0] + (_comb[i1] - _comb[i0]) * fr;
                 float fb = 0.5f + 0.43f * _consEff;

@@ -61,6 +61,7 @@ static class Smoke
             }
             return;
         }
+        if (args.Length >= 4 && args[0] == "kit") { CanonDemo.Kit(args[1], args[2], args[3], args.Length > 4 ? args[4] : null); return; }
         if (args.Length == 2 && args[0] == "canon") { CanonDemo.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "line") { LineDemo.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "react") { ReactDemo.Run(args[1]); return; }

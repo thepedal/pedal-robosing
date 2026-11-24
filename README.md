@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 2.0.3 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 2.0.4 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 The voice is original: a formant model converted to filter coefficients as it
 plays, with no speech ROM data and no code from any other synthesiser. Word
@@ -345,6 +345,14 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 `midi_to_robosing.py` beside it.
 
 ## Changes
+
+**2.0.4**
+- Fixed a rare crash in the pitched-consonant delay line (present since v1.0
+  whenever Cons Tune was above zero, which is the default): a read position a
+  hair below zero rounded up to one past the end of the buffer.
+- `examples/tuning_kit`: an original eight-line test tune as MIDI with its
+  words, and a script that measures a recording of it (level, hiss and pitch
+  per line).
 
 **2.0.3**
 - A new machine starts with no words in the editor (it used to start with ten

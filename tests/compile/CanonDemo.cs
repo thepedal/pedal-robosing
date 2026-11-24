@@ -52,6 +52,43 @@ static class CanonDemo
         return bestLag > 0 ? (double)sr / bestLag : 0;
     }
 
+    /// <summary>Import a MIDI tune onto a words file through the real editor code and render the song to a WAV, as ReBuzz would
+    /// at the file's tempo. settings: "Name=value,Name=value" for global parameters (by parameter name), or null for a new machine.</summary>
+    public static void Kit(string midiPath, string wordsPath, string wavPath, string settings)
+    {
+        var parts = MidiFile.Read(System.IO.File.ReadAllBytes(midiPath), out int div, out var tempos);
+        double bpm = tempos.Count > 0 ? tempos[0].Bpm : 120;
+        const int sr = 44100, tpb = 4;
+        int spt = (int)Math.Round(sr * 60.0 / (bpm * tpb));
+        var transport = new FakeMachine { IsPlaying = true, ParameterGroups = new System.Collections.ObjectModel.ReadOnlyCollection<BuzzGUI.Interfaces.IParameterGroup>(new BuzzGUI.Interfaces.IParameterGroup[0]) };
+        var h = new Host { Machine = transport }; h.MasterInfo.SamplesPerTick = spt; h.MasterInfo.TicksPerBeat = tpb; h.MasterInfo.BeatsPerMin = (int)Math.Round(bpm);
+        var m = new PedalRoboSingMachine(h);
+        if (!string.IsNullOrEmpty(settings))
+        {
+            var props = typeof(PedalRoboSingMachine).GetProperties().Select(p => (p, d: p.GetCustomAttribute<ParameterDecl>())).Where(x => x.d != null).ToDictionary(x => x.d.Name, x => x.p);
+            foreach (var kv in settings.Split(',')) { var f = kv.Split('='); props[f[0].Trim()].SetValue(m, int.Parse(f[1])); }
+        }
+        m.SetPhrases(System.IO.File.ReadAllLines(wordsPath));
+        var win = new PhraseEditorWindow(m);
+        var report = (string)typeof(PhraseEditorWindow).GetMethod("ImportNotes", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(win, new object[] { parts.First(p => !p.Drums), div, tempos });
+        Console.WriteLine(report);
+        var links = m.GetLinks(); int first = Array.FindIndex(links, l => l.Length > 0);
+        PhraseBank.ParseLink(links[first], out _, out int from);
+        int lastTick = parts.First(p => !p.Drums).Notes.Max(n => n.End) * tpb / div, firstTick = parts.First(p => !p.Drums).Notes.Min(n => n.Start) * tpb / div;
+        m.SetPhrase(first + 1, 0);
+        m.SetNote(new Note(((from / 12) << 4) | (from % 12 + 1)), 0);
+        var o = new List<float>();
+        int left = (lastTick - firstTick + 12) * spt;
+        while (left > 0) { int n = Math.Min(256, left); m.Work(buf, n, WorkModes.WM_WRITE); for (int i = 0; i < n; i++) o.Add(buf[i].L / 32768f); left -= n; }
+        using var bw = new System.IO.BinaryWriter(System.IO.File.Create(wavPath));
+        bw.Write("RIFF"u8.ToArray()); bw.Write(36 + o.Count * 2); bw.Write("WAVE"u8.ToArray());
+        bw.Write("fmt "u8.ToArray()); bw.Write(16); bw.Write((short)1); bw.Write((short)1); bw.Write(sr); bw.Write(sr * 2); bw.Write((short)2); bw.Write((short)16);
+        bw.Write("data"u8.ToArray()); bw.Write(o.Count * 2);
+        foreach (var x in o) bw.Write((short)Math.Clamp((int)Math.Round(x * 32767), -32768, 32767));
+        Console.WriteLine($"not-a-number samples {o.Count(float.IsNaN)}");
+        Console.WriteLine($"rendered {o.Count / (double)sr:0.0} s at {bpm:0.#} BPM, {spt} samples per tick, peak {o.Max(Math.Abs):0.00} -> {wavPath}");
+    }
+
     public static void Run(string presetPath)
     {
         // 1. Every preset: one note and a phrase number sings the drawn line and stops by itself
