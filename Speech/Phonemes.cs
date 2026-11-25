@@ -37,6 +37,7 @@ namespace PedalRoboSing.Speech
         public float[] F = new float[4];        // formant targets (Hz) — the locus for stops
         public float[] B = new float[4];        // bandwidths (Hz)
         public float[] FEnd;                    // diphthong end target F1..F3 (null if none)
+        public float[] LocF, LocB;              // fricatives: the mouth shape neighbours move to and from (null = F, B)
 
         public float AV;                        // voicing amplitude 0..1
         public float AN;                        // noise amplitude 0..1
@@ -78,6 +79,13 @@ namespace PedalRoboSing.Speech
             var p = V(n, dur, f1, f2, f3, b1, b2, b3);
             p.Kind = PKind.Diphthong;
             p.FEnd = new[] { e1, e2, e3 };
+        }
+
+        static void Loc(string n, float f1, float f2, float f3, float f4)
+        {
+            var p = _map[n];
+            p.LocF = new[] { f1, f2, f3, f4 };
+            p.LocB = new[] { p.B[0] > 1000f ? 300f : p.B[0], 300f, 350f, 400f };
         }
 
         static Phoneme C(string n, PKind k, float dur, float av, float an,
@@ -135,31 +143,39 @@ namespace PedalRoboSing.Speech
             C("WH", PKind.Glide, 80, 0.35f, 0.30f, 290, 610, 2150, 3300, 80, 120, 120, 300);
 
             // Nasals — all-pole approximation of the murmur (strong low resonance)
-            C("M",  PKind.Nasal, 70, 0.60f, 0f, 250, 1100, 2200, 3300, 60, 250, 300, 300);
-            C("N",  PKind.Nasal, 60, 0.60f, 0f, 250, 1600, 2600, 3300, 60, 250, 300, 300);
-            C("NG", PKind.Nasal, 90, 0.60f, 0f, 250, 2000, 2800, 3300, 60, 250, 300, 300);
+            C("M",  PKind.Nasal, 70, 0.72f, 0f, 250, 1100, 2200, 3300, 60, 250, 300, 300);
+            C("N",  PKind.Nasal, 60, 0.72f, 0f, 250, 1600, 2600, 3300, 60, 250, 300, 300);
+            C("NG", PKind.Nasal, 90, 0.72f, 0f, 250, 2000, 2800, 3300, 60, 250, 300, 300);
 
-            // Voiceless fricatives — wide low bandwidths so the noise lands in the high peaks
-            C("F",  PKind.Fricative, 100, 0f, 0.35f, 400, 1200, 2400, 3400, 500, 600, 600, 700);
-            C("TH", PKind.Fricative,  90, 0f, 0.28f, 400, 1500, 2700, 3600, 500, 600, 600, 700);
-            C("S",  PKind.Fricative, 105, 0f, 0.75f, 600, 1900, 3500, 5000, 800, 800, 300, 500);
-            C("SH", PKind.Fricative, 105, 0f, 0.80f, 600, 1800, 2600, 3500, 800, 250, 300, 400);
-            // Voiced fricatives — a low voice-bar resonance plus the frication peaks
-            C("V",  PKind.VoicedFricative, 60, 0.55f, 0.20f, 300, 1200, 2400, 3400, 150, 500, 600, 700);
-            C("DH", PKind.VoicedFricative, 50, 0.50f, 0.15f, 300, 1500, 2700, 3600, 150, 500, 600, 700);
-            C("Z",  PKind.VoicedFricative, 75, 0.40f, 0.55f, 300, 1900, 3500, 5000, 250, 800, 300, 500);
-            C("ZH", PKind.VoicedFricative, 70, 0.40f, 0.55f, 300, 1800, 2600, 3500, 250, 250, 300, 400);
+            // Voiceless fricatives. The first resonance is kept low but very wide, so it adds almost
+            // nothing: a narrow one there put most of the hiss below 2.5 kHz. The other three carry the
+            // sound: s high and tight (4.4 to 6.8 kHz), sh lower (2.3 to 4.6 kHz), f and th weak and flat.
+            C("F",  PKind.Fricative, 100, 0f, 0.44f, 500, 2400, 4200, 6200, 2500, 1500, 1500, 1500);
+            C("TH", PKind.Fricative,  90, 0f, 0.38f, 500, 2800, 4600, 6400, 2500, 1500, 1500, 1500);
+            C("S",  PKind.Fricative, 105, 0f, 0.68f, 600, 4400, 5600, 6800, 2500, 600, 500, 700);
+            C("SH", PKind.Fricative, 105, 0f, 0.70f, 600, 2300, 3200, 4600, 2500, 500, 450, 700);
+            // Voiced fricatives — a low voice-bar resonance plus their voiceless partner's hiss
+            C("V",  PKind.VoicedFricative, 60, 0.55f, 0.28f, 300, 2400, 4200, 6200, 150, 1500, 1500, 1500);
+            C("DH", PKind.VoicedFricative, 50, 0.50f, 0.22f, 300, 2800, 4600, 6400, 150, 1500, 1500, 1500);
+            C("Z",  PKind.VoicedFricative, 75, 0.40f, 0.55f, 300, 4400, 5600, 6800, 250, 600, 500, 700);
+            C("ZH", PKind.VoicedFricative, 70, 0.40f, 0.55f, 300, 2300, 3200, 4600, 250, 500, 450, 700);
+            // Where a neighbouring vowel's resonances head as the mouth closes for each of them. The hiss
+            // takes over only once the voice has stopped, so no whistle sweeps up through the vowel.
+            Loc("F", 400, 1200, 2400, 3400); Loc("V", 300, 1200, 2400, 3400);
+            Loc("TH", 400, 1500, 2700, 3600); Loc("DH", 300, 1500, 2700, 3600);
+            Loc("S", 400, 1800, 2700, 3600); Loc("Z", 300, 1800, 2700, 3600);
+            Loc("SH", 400, 1900, 2500, 3400); Loc("ZH", 300, 1900, 2500, 3400);
 
             // Aspiration — takes the following sound's formants at plan time
             C("HH", PKind.Aspirate, 70, 0f, 0.45f, 500, 1500, 2500, 3300, 200, 200, 300, 400);
 
             // Stops: closure, burst, aspiration (ms), burst amp, locus F1..F3, burst spectrum F1..F4 / B1..B4
-            S("P", false, 65, 10, 40, 0.50f, 250,  900, 2100,  500, 1000, 2500, 3400,  600, 600, 700, 700);
-            S("B", true,  55,  8,  0, 0.35f, 250,  900, 2100,  500, 1000, 2500, 3400,  600, 600, 700, 700);
+            S("P", false, 65, 10, 40, 0.62f, 250,  900, 2100,  500, 1000, 2500, 3400,  600, 600, 700, 700);
+            S("B", true,  55,  8,  0, 0.50f, 250,  900, 2100,  500, 1000, 2500, 3400,  600, 600, 700, 700);
             S("T", false, 55, 12, 40, 0.80f, 250, 1700, 2700,  500, 1800, 3400, 4500,  800, 500, 300, 400);
-            S("D", true,  45, 10,  0, 0.60f, 250, 1700, 2700,  500, 1800, 3400, 4500,  800, 500, 300, 400);
+            S("D", true,  45, 10,  0, 0.70f, 250, 1700, 2700,  500, 1800, 3400, 4500,  800, 500, 300, 400);
             S("K", false, 60, 15, 45, 0.80f, 250, 1900, 2500,  400, 1900, 2600, 3500,  500, 200, 300, 400);
-            S("G", true,  50, 12,  0, 0.60f, 250, 1900, 2500,  400, 1900, 2600, 3500,  500, 200, 300, 400);
+            S("G", true,  50, 12,  0, 0.70f, 250, 1900, 2500,  400, 1900, 2600, 3500,  500, 200, 300, 400);
 
             // Affricates: T/D-style closure and burst, then a fricative
             S("CH", false, 50, 8, 0, 0.60f, 250, 1800, 2600,  500, 1800, 3400, 4500,  800, 500, 300, 400);

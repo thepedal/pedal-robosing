@@ -641,6 +641,19 @@ namespace PedalRoboSing.Speech
                         float tOut = Math.Min(tr, D * 0.35f);
                         if (prev != null && prev.Ph.IsStopLike) tIn = Math.Min(40f, D * 0.4f);
 
+                        if (ph.LocF != null)
+                        {
+                            // A hissing sound: neighbours meet it at its mouth shape; the hiss resonances
+                            // come in a few ms later, when the voice is already off, and leave before it returns
+                            float edge = Math.Min(8f, D * 0.2f);
+                            fk.Add(FK(T + 1f, ph.LocF, ph.LocB));
+                            fk.Add(FK(T + edge, ph.F, ph.B));
+                            fk.Add(FK(T + D - edge, ph.F, ph.B));
+                            fk.Add(FK(T + D - 1f, ph.LocF, ph.LocB));
+                            Src(T + 2f, ph.AV, ph.AN);
+                            Src(T + D - 2f, ph.AV, ph.AN);
+                            break;
+                        }
                         fk.Add(FK(T + tIn, ph.F, ph.B));
                         if (ph.FEnd != null)
                         {

@@ -15,7 +15,7 @@
          the filename (minus .NET) is the machine-browser display name. -->
     <AssemblyName>Pedal RoboSing.NET</AssemblyName>
     <RootNamespace>PedalRoboSing</RootNamespace>
-    <Version>2.0.6</Version>
+    <Version>2.1.0</Version>
     <Authors>thepedal</Authors>
     <Description>Pedal RoboSing: vocal-tract instrument for ReBuzz</Description>
     <Nullable>disable</Nullable>

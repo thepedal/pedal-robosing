@@ -62,6 +62,7 @@ static class Smoke
             }
             return;
         }
+        if (args.Length == 1 && args[0] == "bursts") { BurstProbe.Run(); return; }
         if (args.Length == 1 && args[0] == "lex") { LexProbe.Run(); return; }
         if (args.Length == 2 && args[0] == "rhymes") { RhymeProbe.Run(args[1]); return; }
         if (args.Length >= 4 && args[0] == "kit") { CanonDemo.Kit(args[1], args[2], args[3], args.Length > 4 ? args[4] : null); return; }

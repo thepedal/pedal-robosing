@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 2.0.6 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 2.1.0 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 The voice is original: a formant model converted to filter coefficients as it
 plays, with no speech ROM data and no code from any other synthesiser. Word
@@ -345,6 +345,17 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 `midi_to_robosing.py` beside it.
 
 ## Changes
+
+**2.1.0** (first tuning round, by ear against the tuning kit)
+- Stops no longer lose their burst. A burst lasts about 10 ms and the voice
+  looked at the phrase once per frame (15 ms), so d, g and above all b at the
+  start of a word were often silent. The voice now looks back over the stretch
+  it has just covered. Bursts are a little stronger.
+- Hissing sounds are heard: s, sh, f and th (and z, zh, v, dh) have their
+  noise where it belongs instead of mostly below 2.5 kHz. A neighbouring vowel
+  moves to the consonant's mouth shape and the hiss comes in once the voice
+  has stopped, so nothing whistles through the vowel.
+- m, n and ng are a little louder.
 
 **2.0.6**
 - The pronouncing dictionary is now really inside the DLL. Since v1.3 it had

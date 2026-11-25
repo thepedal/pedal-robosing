@@ -479,3 +479,30 @@ static class RhymeProbe
 }
 
 static class LexProbe { public static void Run() { Console.WriteLine("dictionary status: " + PedalRoboSing.Speech.Lexicon.Status); } }
+
+static class BurstProbe
+{
+    // How often does the burst of a word's opening stop reach the output, across different speeds (which shift where frames fall)?
+    public static void Run()
+    {
+        foreach (bool fix in new[] { false, true })
+        {
+            Console.WriteLine(fix ? "with burst catching:" : "as it was:");
+            foreach (string word in new[] { "pat", "dip", "dog", "take", "big", "boy", "tick", "clock", "go" })
+            {
+                var u = PedalRoboSing.Speech.Planner.Build(word, PedalRoboSing.Speech.SpeakMode.Speak);
+                int seen = 0, runs = 0; float sum = 0;
+                for (float speed = 0.8f; speed <= 1.6f; speed += 0.04f)
+                {
+                    var v = new PedalRoboSing.Speech.LpcVoice(1) { ChipRate = 16000, FrameMs = 15, Speed = speed, CatchBursts = fix };
+                    float peak = 0;
+                    v.FrameTrace = (t, av, an) => { if (t < 130f && av < 0.3f && an > peak) peak = an; };
+                    v.StartPhrase(u, 0f, u.Length, 48f, 1f);
+                    for (int i = 0; i < 16000 && v.IsActive; i++) v.Next();
+                    runs++; sum += peak; if (peak >= 0.3f) seen++;
+                }
+                Console.WriteLine($"  {word,-6} burst reached the voice in {seen,2} of {runs} runs, average noise level {sum / runs:0.00}");
+            }
+        }
+    }
+}

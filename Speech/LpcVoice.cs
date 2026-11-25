@@ -65,6 +65,7 @@ namespace PedalRoboSing.Speech
         public float ScrubTarget01;         // Scrub: position in the window, 0..1
         public int   KeyRoot, KeyMask = 0xFFF;   // the song's key, for Key Lock (apart from Root/ScaleMask, which tune the sound)
         public bool  KeyLock;               // the melody moves by scale steps from the note that starts it
+        public bool  CatchBursts = true;    // never step over a stop's burst between frames
         public bool  LineHold = true;       // Line: vowels fill their blocks (off = short, with silence after)
 
         // React: how far the feel of each sound moves the voice, each -1..+1 (0 = off)
@@ -109,6 +110,9 @@ namespace PedalRoboSing.Speech
         bool _resting, _vowelSeen, _lineSettled;
         /// <summary>Test hook: called with (syllable, ms since the line started) when a syllable's vowel begins.</summary>
         public Action<int, float> LineTrace;
+        /// <summary>Test hook: playhead (ms into the phrase), voiced level and noise level of each frame.</summary>
+        public Action<float, float, float> FrameTrace;
+        float _tSeen;                           // how far the playhead had got at the last frame
         int _fi, _si, _pi, _qi;
         FeelKey _q = FeelKey.Neutral, _qRaw = FeelKey.Neutral;
         float _consEff, _vibMul = 1f;
@@ -244,7 +248,7 @@ namespace PedalRoboSing.Speech
             _leader = r.Leader;
             _speaking = true;
             _tailSamples = (int)((0.04f + 0.35f * Math.Max(ConsTune, _consEff)) * ChipRate);
-            _fi = _si = _pi = _qi = 0;
+            _fi = _si = _pi = _qi = 0; _tSeen = float.MaxValue;
             _refSemis = 0f;
             _score = r.Score; _lineBase = r.Midi; _sylCur = 0;
             switch (r.Kind)
@@ -548,6 +552,25 @@ namespace PedalRoboSing.Speech
             {
                 var u = _u;
                 float t = Math.Clamp(_t, 0f, u.Length);
+
+                // A stop's burst lasts 8 to 15 ms, and less when a syllable is squeezed, so a look at
+                // one instant per frame can step straight over it. Look back over the stretch just
+                // travelled; if a burst of noise sat inside it, give this frame to the burst.
+                bool burst = false;
+                if (CatchBursts && _kind != Kind.Scrub && t > _tSeen && t - _tSeen < 120f)
+                {
+                    u.SampleSource(t, ref _si, out _, out float anHere);
+                    float best = anHere * 1.4f + 0.05f, at = t;
+                    for (int j = 1; j <= 5; j++)
+                    {
+                        float tp = _tSeen + (t - _tSeen) * j / 6f;
+                        u.SampleSource(tp, ref _si, out float avP, out float anP);
+                        if (anP > best && avP < 0.3f) { best = anP; at = tp; }
+                    }
+                    if (at != t) { t = at; burst = true; }
+                }
+                _tSeen = Math.Clamp(_t, 0f, u.Length);
+
                 u.SampleFormants(_kind == Kind.Run ? Math.Min(t, _tEnd) : t, ref _fi, _fTrack, _bTrack);
                 u.SampleSource(t, ref _si, out av, out an);
                 semis = u.SamplePitch(t, ref _pi);
@@ -568,7 +591,7 @@ namespace PedalRoboSing.Speech
                 }
 
                 // Glide: the mouth eases toward where the playhead says it should be
-                float c = (_snap || GlideMs <= 0f || _kind == Kind.Scrub) ? 1f : 1f - MathF.Exp(-FrameMs / GlideMs);
+                float c = (_snap || burst || GlideMs <= 0f || _kind == Kind.Scrub) ? 1f : 1f - MathF.Exp(-FrameMs / GlideMs);
                 for (int i = 0; i < 4; i++)
                 {
                     _fSm[i] += (_fTrack[i] - _fSm[i]) * c;
@@ -657,6 +680,7 @@ namespace PedalRoboSing.Speech
             // A harmonic sitting on a narrow resonance is much louder than the
             // noise-power normalisation expects, so trim voiced level as Tune rises.
             _avTgt = av * (1f - 0.25f * tune); _anTgt = an;
+            FrameTrace?.Invoke(_t, _avTgt, _anTgt);
         }
 
         int PolyFromPoles(int np)
