@@ -32,7 +32,7 @@ namespace PedalRoboSing
     [MachineDecl(Name = "Pedal RoboSing", ShortName = "RoboSing", Author = "thepedal", MaxTracks = 8)]
     public sealed class PedalRoboSingMachine : IBuzzMachine
     {
-        internal const string Version = "2.0.4";
+        internal const string Version = "2.0.6";
         public const int MaxVoices = 8;
         const float SampleScale = 32768f;
         const float MixHeadroom = 0.9f;
@@ -714,7 +714,8 @@ namespace PedalRoboSing
                             "Vocal-tract instrument: typed phrases become mouth movement that notes play a syllable at a time, " +
                             "in sync, scrubbed, or as whole lines with their own melody, with resonances tuned to the music. " +
                             "Original rules and formant model; no speech ROM data.\n\n" +
-                            "Pronunciations from the CMU Pronouncing Dictionary, Copyright (C) 1993-2015 Carnegie Mellon University.\n\n" +
+                            "Pronunciations from the CMU Pronouncing Dictionary, Copyright (C) 1993-2015 Carnegie Mellon University.\n" +
+                            "Dictionary: " + Lexicon.Status + ".\n\n" +
                             "github.com/thepedal/pedal-robosing\n" +
                             "GPL-3.0-or-later")
                     }

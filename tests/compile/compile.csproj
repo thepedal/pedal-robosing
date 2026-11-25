@@ -14,7 +14,7 @@
     <Compile Include="../../*.cs" />
     <Compile Include="../../Speech/*.cs" />
     <Compile Include="Stubs.cs" />
-    <EmbeddedResource Include="../../Speech/cmudict.bin.gz" LogicalName="PedalRoboSing.cmudict.bin.gz" />
+    <EmbeddedResource Include="../../Speech/cmudict.gz" LogicalName="PedalRoboSing.cmudict.gz" WithCulture="false" />
     <Compile Include="SmokeTest.cs" />
     <Compile Include="Demo.cs" />
     <Compile Include="SongPlayer.cs" />

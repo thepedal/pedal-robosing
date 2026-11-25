@@ -15,7 +15,7 @@
          the filename (minus .NET) is the machine-browser display name. -->
     <AssemblyName>Pedal RoboSing.NET</AssemblyName>
     <RootNamespace>PedalRoboSing</RootNamespace>
-    <Version>2.0.4</Version>
+    <Version>2.0.6</Version>
     <Authors>thepedal</Authors>
     <Description>Pedal RoboSing: vocal-tract instrument for ReBuzz</Description>
     <Nullable>disable</Nullable>
@@ -37,10 +37,22 @@
     </Reference>
   </ItemGroup>
 
-  <!-- The pronouncing dictionary (CMUdict, packed by tools\build_lexicon.py) travels inside the DLL. -->
+  <!-- The pronouncing dictionary (CMUdict, packed by tools\build_lexicon.py) travels inside the DLL.
+       WithCulture=false, and no dotted word before the extension: MSBuild reads name.xx.ext as a
+       resource for the language xx and moves it out of the DLL into a satellite assembly. The file
+       used to be cmudict.bin.gz, and bin is a language code (Edo), so the DLL shipped without it. -->
   <ItemGroup>
-    <EmbeddedResource Include="Speech\cmudict.bin.gz" LogicalName="PedalRoboSing.cmudict.bin.gz" />
+    <EmbeddedResource Include="Speech\cmudict.gz" LogicalName="PedalRoboSing.cmudict.gz" WithCulture="false" />
   </ItemGroup>
+
+  <!-- Fail the build, loudly, if the dictionary did not end up inside the DLL. -->
+  <Target Name="CheckDictionaryEmbedded" AfterTargets="CoreCompile">
+    <ItemGroup>
+      <_DictInDll Include="@(EmbeddedResource)" Condition="'%(EmbeddedResource.LogicalName)' == 'PedalRoboSing.cmudict.gz' and '%(EmbeddedResource.WithCulture)' != 'true'" />
+    </ItemGroup>
+    <Error Condition="!Exists('$(MSBuildProjectDirectory)\Speech\cmudict.gz')" Text="Speech\cmudict.gz is missing: the pronouncing dictionary cannot be built into the DLL." />
+    <Error Condition="'@(_DictInDll)' == ''" Text="The pronouncing dictionary is not being embedded in the main DLL (MSBuild has treated it as a language resource)." />
+  </Target>
 
   <!-- The offline test harness has its own project; keep it out of the machine. -->
   <ItemGroup>

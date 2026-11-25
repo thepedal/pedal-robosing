@@ -4,7 +4,7 @@
 // Pedal RoboSing — pronouncing dictionary.
 //
 // Looks words up in the CMU Pronouncing Dictionary, packed by
-// tools/build_lexicon.py and embedded in the DLL as cmudict.bin.gz. The
+// tools/build_lexicon.py and embedded in the DLL as cmudict.gz. The
 // dictionary is Copyright (C) 1993-2015 Carnegie Mellon University and is used
 // under its own licence (Speech/cmudict.LICENSE.txt).
 //
@@ -35,12 +35,29 @@ namespace PedalRoboSing.Speech
 
         public static int Count => _data.Value.offsets.Length;
 
+        static string _status = "not asked for yet";
+        /// <summary>Whether the dictionary loaded, in plain words, for the About box. Without it every word goes by the spelling rules.</summary>
+        public static string Status { get { _ = Count; return _status; } }
+
         static (byte[], int[]) Load()
         {
             try
             {
-                using var res = typeof(Lexicon).Assembly.GetManifestResourceStream("PedalRoboSing.cmudict.bin.gz");
-                if (res == null) return (Array.Empty<byte>(), Array.Empty<int>());
+                var asm = typeof(Lexicon).Assembly;
+                var res = asm.GetManifestResourceStream("PedalRoboSing.cmudict.gz");
+                if (res == null)
+                {
+                    // The build may have given it another name: take anything that ends the right way
+                    string[] names = asm.GetManifestResourceNames();
+                    foreach (string name in names)
+                        if (name.Contains("cmudict", StringComparison.OrdinalIgnoreCase)) { res = asm.GetManifestResourceStream(name); break; }
+                    if (res == null)
+                    {
+                        _status = "NOT LOADED: it is not inside the DLL (the DLL holds " + (names.Length == 0 ? "no resources" : string.Join(", ", names)) + ")";
+                        return (Array.Empty<byte>(), Array.Empty<int>());
+                    }
+                }
+                using var resource = res;
                 using var gz = new GZipStream(res, CompressionMode.Decompress);
                 using var ms = new MemoryStream(3 << 20);
                 gz.CopyTo(ms);
@@ -58,17 +75,23 @@ namespace PedalRoboSing.Speech
                     while (blob[pos] != 0) pos++;
                     pos++;
                 }
+                _status = n.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " words loaded";
                 return (blob, offsets);
             }
-            catch
+            catch (Exception ex)
             {
+                _status = "NOT LOADED: " + ex.GetType().Name + ", " + ex.Message;
                 return (Array.Empty<byte>(), Array.Empty<int>());
             }
         }
 
         /// <summary>Pronunciation of an upper-case word as ARPAbet tokens ("T AX N AY1 T"), or null.</summary>
+        /// <summary>Test switch: behave as if the dictionary were missing, so only the spelling rules are used.</summary>
+        public static bool Off;
+
         public static string Lookup(string word)
         {
+            if (Off) return null;
             var (blob, offsets) = _data.Value;
             int lo = 0, hi = offsets.Length - 1;
             while (lo <= hi)

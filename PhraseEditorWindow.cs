@@ -304,7 +304,8 @@ namespace PedalRoboSing
                 _rhymes ??= Planner.FindRhymes(Lines());        // against every line in the box
                 var u = Planner.Build(line, SpeakMode.Speak, _rhymes);
                 ShowMelody(idx, line, u);
-                _preview.Text = $"Phrase {idx + 1}: " + (u.Phonetic.Length > 0 ? u.Phonetic : "(silent)")
+                _preview.Text = (Lexicon.Count == 0 ? "Pronouncing dictionary " + Lexicon.Status + ". Words are going by the spelling rules only.\n" : "")
+                              + $"Phrase {idx + 1}: " + (u.Phonetic.Length > 0 ? u.Phonetic : "(silent)")
                               + (u.SoundNotes.Length > 0 ? "\n" + u.SoundNotes : "")
                               + (u.WordCount > 0 ? $"    [{u.WordCount} words, {u.SylS.Length} syllables, {u.PhS.Length} phonemes, {u.Length / 1000f:0.0} s]" : "")
                               + SongNote(idx);

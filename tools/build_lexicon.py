@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 thepedal
-"""Pack the CMU Pronouncing Dictionary into Speech/cmudict.bin.gz, the lexicon
+"""Pack the CMU Pronouncing Dictionary into Speech/cmudict.gz, the lexicon
 embedded in the machine.
 
   python tools/build_lexicon.py path/to/cmudict.dict
@@ -22,7 +22,7 @@ import gzip, os, re, sys
 PHONES = ["AA", "AE", "AH", "AO", "AW", "AY", "B", "CH", "D", "DH", "EH", "ER", "EY", "F", "G", "HH", "IH", "IY",
           "JH", "K", "L", "M", "N", "NG", "OW", "OY", "P", "R", "S", "SH", "T", "TH", "UH", "UW", "V", "W", "Y",
           "Z", "ZH", "AX"]
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Speech", "cmudict.bin.gz")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Speech", "cmudict.gz")
 
 
 def main():

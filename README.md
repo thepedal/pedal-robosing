@@ -7,7 +7,7 @@ mouth's resonances can be tuned to the harmonics of the note or to a scale, and
 the consonant noise can be pitched, so the words become part of the harmony.
 It isn't trying to be a realistic singer.
 
-Version 2.0.4 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
+Version 2.0.6 · managed generator · 8 tracks · net10.0-windows · GPL-3.0-or-later
 
 The voice is original: a formant model converted to filter coefficients as it
 plays, with no speech ROM data and no code from any other synthesiser. Word
@@ -346,6 +346,19 @@ one DrumGrid and one RoboSing), `robosing_ref.bmxml`, `build_example.py` and
 
 ## Changes
 
+**2.0.6**
+- The pronouncing dictionary is now really inside the DLL. Since v1.3 it had
+  been left out by the build: the file was named `cmudict.bin.gz`, MSBuild
+  took `.bin` for a language code and moved the file into a separate
+  language-resources DLL that ReBuzz never loads. Every word had been going by
+  the spelling rules. The file is now `Speech/cmudict.gz`, marked as not
+  language-specific, and the build fails if it is not embedded.
+
+**2.0.5**
+- The About box says whether the pronouncing dictionary loaded, and the phrase
+  editor says so above the pronunciation if it did not. If the dictionary is in
+  the DLL under another name it is now found.
+
 **2.0.4**
 - Fixed a rare crash in the pitched-consonant delay line (present since v1.0
   whenever Cons Tune was above zero, which is the default): a read position a
@@ -545,7 +558,7 @@ Pronunciations come from the **CMU Pronouncing Dictionary**
 (github.com/cmusphinx/cmudict, commit 74790861), Copyright (C) 1993-2015
 Carnegie Mellon University, used and redistributed under its own licence, which
 is reproduced in `Speech/cmudict.LICENSE.txt`. `tools/build_lexicon.py` packs it
-into `Speech/cmudict.bin.gz`: first pronunciation of each word only, words with
+into `Speech/cmudict.gz`: first pronunciation of each word only, words with
 characters other than letters and apostrophes left out, and unstressed AH
 written as the schwa AX. The packed file is embedded in the DLL.
 

@@ -11,7 +11,7 @@ using PedalRoboSing.Speech;
 static class CanonDemo
 {
     const int Tick = 5250;                       // 126 BPM, 4 ticks per beat at 44.1 kHz
-    static readonly Sample[] buf = new Sample[256];
+    static readonly Sample[] buf = new Sample[8192];
     const string Text = "Seven silver circuits sing.";
     const string Score = "0,2,0 0,2,2 0,2,4 0,2,5 0,2,7 0,2,5 2,6,12";
 
@@ -56,30 +56,56 @@ static class CanonDemo
     /// at the file's tempo. settings: "Name=value,Name=value" for global parameters (by parameter name), or null for a new machine.</summary>
     public static void Kit(string midiPath, string wordsPath, string wavPath, string settings)
     {
+        Lexicon.Off = Environment.GetEnvironmentVariable("KIT_NOLEX") == "1";
         var parts = MidiFile.Read(System.IO.File.ReadAllBytes(midiPath), out int div, out var tempos);
         double bpm = tempos.Count > 0 ? tempos[0].Bpm : 120;
-        const int sr = 44100, tpb = 4;
+        const int tpb = 4;
+        int sr = int.TryParse(Environment.GetEnvironmentVariable("KIT_SR"), out int envSr) ? envSr : 44100;
         int spt = (int)Math.Round(sr * 60.0 / (bpm * tpb));
         var transport = new FakeMachine { IsPlaying = true, ParameterGroups = new System.Collections.ObjectModel.ReadOnlyCollection<BuzzGUI.Interfaces.IParameterGroup>(new BuzzGUI.Interfaces.IParameterGroup[0]) };
-        var h = new Host { Machine = transport }; h.MasterInfo.SamplesPerTick = spt; h.MasterInfo.TicksPerBeat = tpb; h.MasterInfo.BeatsPerMin = (int)Math.Round(bpm);
+        var h = new Host { Machine = transport }; h.MasterInfo.SamplesPerSec = sr; h.MasterInfo.SamplesPerTick = spt; h.MasterInfo.TicksPerBeat = tpb; h.MasterInfo.BeatsPerMin = (int)Math.Round(bpm);
         var m = new PedalRoboSingMachine(h);
         if (!string.IsNullOrEmpty(settings))
         {
             var props = typeof(PedalRoboSingMachine).GetProperties().Select(p => (p, d: p.GetCustomAttribute<ParameterDecl>())).Where(x => x.d != null).ToDictionary(x => x.d.Name, x => x.p);
             foreach (var kv in settings.Split(',')) { var f = kv.Split('='); props[f[0].Trim()].SetValue(m, int.Parse(f[1])); }
         }
-        m.SetPhrases(System.IO.File.ReadAllLines(wordsPath));
+        // As in ReBuzz: the machine starts empty and the words exist only in the editor's text box until the import applies them
         var win = new PhraseEditorWindow(m);
+        var tb = (System.Windows.Controls.TextBox)typeof(PhraseEditorWindow).GetField("_box", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(win);
+        tb.Text = System.IO.File.ReadAllText(wordsPath).Replace("\n", "\r\n");
+        Console.WriteLine($"before import the machine has {m.GetPhrases().Length} phrases");
         var report = (string)typeof(PhraseEditorWindow).GetMethod("ImportNotes", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(win, new object[] { parts.First(p => !p.Drums), div, tempos });
         Console.WriteLine(report);
+        Console.WriteLine($"after import the machine has {m.GetPhrases().Length} phrases");
+        Console.WriteLine("SCORES " + string.Join(" | ", m.GetScores()));
+        Console.WriteLine("LINKS " + string.Join(" | ", m.GetLinks()));
+        string stateFile = Environment.GetEnvironmentVariable("KIT_STATE");
+        if (!string.IsNullOrEmpty(stateFile))
+        {
+            // Replace what the harness imported with a machine state saved by ReBuzz
+            var ser = new System.Xml.Serialization.XmlSerializer(typeof(RoboSingState));
+            using var fs = System.IO.File.OpenRead(stateFile);
+            m.MachineState = (RoboSingState)ser.Deserialize(fs);
+            Console.WriteLine("STATE  " + string.Join(" | ", m.GetScores()));
+        }
         var links = m.GetLinks(); int first = Array.FindIndex(links, l => l.Length > 0);
         PhraseBank.ParseLink(links[first], out _, out int from);
         int lastTick = parts.First(p => !p.Drums).Notes.Max(n => n.End) * tpb / div, firstTick = parts.First(p => !p.Drums).Notes.Min(n => n.Start) * tpb / div;
+        // KIT_NUDGE: let that many samples pass before the note, to see how much a tiny shift in time changes the result
+        int nudge = int.TryParse(Environment.GetEnvironmentVariable("KIT_NUDGE"), out int envNudge) ? Math.Clamp(envNudge, 0, 8192) : 0;
+        if (nudge > 0) m.Work(buf, nudge, WorkModes.WM_WRITE);
+        // KIT_PHRASE: start from that line instead, on its own starting note
+        if (int.TryParse(Environment.GetEnvironmentVariable("KIT_PHRASE"), out int only) && only >= 1 && only <= links.Length)
+        { first = only - 1; PhraseBank.ParseLink(links[first], out _, out from); }
         m.SetPhrase(first + 1, 0);
         m.SetNote(new Note(((from / 12) << 4) | (from % 12 + 1)), 0);
         var o = new List<float>();
         int left = (lastTick - firstTick + 12) * spt;
-        while (left > 0) { int n = Math.Min(256, left); m.Work(buf, n, WorkModes.WM_WRITE); for (int i = 0; i < n; i++) o.Add(buf[i].L / 32768f); left -= n; }
+        int chunk = int.TryParse(Environment.GetEnvironmentVariable("KIT_BUF"), out int envBuf) ? Math.Clamp(envBuf, 1, 8192) : 256;
+        // KIT_TICKALIGN: hosts cut their buffers at tick boundaries, so a buffer never runs across one
+        bool align = Environment.GetEnvironmentVariable("KIT_TICKALIGN") == "1"; int posInTick = 0;
+        while (left > 0) { int n = Math.Min(chunk, left); if (align) { n = Math.Min(n, spt - posInTick); posInTick = (posInTick + n) % spt; } m.Work(buf, n, WorkModes.WM_WRITE); for (int i = 0; i < n; i++) o.Add(buf[i].L / 32768f); left -= n; }
         using var bw = new System.IO.BinaryWriter(System.IO.File.Create(wavPath));
         bw.Write("RIFF"u8.ToArray()); bw.Write(36 + o.Count * 2); bw.Write("WAVE"u8.ToArray());
         bw.Write("fmt "u8.ToArray()); bw.Write(16); bw.Write((short)1); bw.Write((short)1); bw.Write(sr); bw.Write(sr * 2); bw.Write((short)2); bw.Write((short)16);
@@ -439,3 +465,17 @@ static class CanonDemo
 }
 
 class HostWin : System.Windows.Window, BuzzGUI.Interfaces.IMachineGUIHost { }
+
+static class RhymeProbe
+{
+    public static void Run(string wordsPath)
+    {
+        var lines = System.IO.File.ReadAllLines(wordsPath);
+        var set = PedalRoboSing.Speech.Planner.FindRhymes(lines);
+        Console.WriteLine("rhymes for the kit alone: " + string.Join(", ", set));
+        var with = PedalRoboSing.PhraseBank.Defaults.Concat(lines).ToArray();
+        Console.WriteLine("with the ten old sample phrases also present: " + string.Join(", ", PedalRoboSing.Speech.Planner.FindRhymes(with)));
+    }
+}
+
+static class LexProbe { public static void Run() { Console.WriteLine("dictionary status: " + PedalRoboSing.Speech.Lexicon.Status); } }
